@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data: https:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https:" />
+  <title>Astra Client</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+<!-- Background: the aurora clip, dimmed under a scrim so the UI stays readable -->
+<video id="bg-video" class="bg-video" autoplay muted loop playsinline>
+  <source src="../assets/background.mp4" type="video/mp4" />
+</video>
+<div class="bg-still" id="bg-still"></div>
+<div class="bg-scrim"></div>
+<audio id="theme" loop preload="auto"><source src="../assets/theme.mp3" type="audio/mpeg" /></audio>
+
+<!-- Load intro -->
+<div id="splash" class="splash">
+  <div class="splash-stars"></div>
+  <div class="splash-inner">
+    <img class="splash-logo" src="../assets/icon.png" alt="" />
+    <div class="splash-word">ASTRA CLIENT</div>
+    <div class="splash-bar"><span id="splash-bar-fill"></span></div>
+    <div class="splash-status" id="splash-status">Waking the moon</div>
+  </div>
+</div>
+
+<div class="titlebar">
+  <div class="titlebar-drag">
+    <img class="titlebar-logo" src="../assets/icon.png" alt="" />
+    <span class="titlebar-name">Astra Client</span>
+  </div>
+  <div class="titlebar-buttons">
+    <button class="icon-btn" id="btn-music" title="Music">
+      <svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="18" r="2.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="16" r="2.4" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+    </button>
+    <button class="win-btn" id="win-min" aria-label="Minimise"><span class="bar-min"></span></button>
+    <button class="win-btn" id="win-max" aria-label="Maximise"><span class="bar-max"></span></button>
+    <button class="win-btn win-close" id="win-close" aria-label="Close">
+      <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- Left icon rail -->
+  <nav class="rail">
+    <button class="rail-btn active" data-view="home" title="Play">
+      <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+    </button>
+    <button class="rail-btn" data-view="versions" title="Versions">
+      <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="rail-btn" data-view="mods" title="Mods">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M17 13.5v7M13.5 17h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    </button>
+    <button class="rail-btn" data-view="wardrobe" title="Wardrobe">
+      <svg viewBox="0 0 24 24"><path d="M12 3.5l3 2.2v3.1l4 2v9.7H5v-9.7l4-2V5.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8.8v11.7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+    </button>
+    <button class="rail-btn" data-view="shop" title="Shop">
+      <svg viewBox="0 0 24 24"><path d="M4 8h16l-1.3 11.2a2 2 0 01-2 1.8H7.3a2 2 0 01-2-1.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.5 10.5V7a3.5 3.5 0 017 0v3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <button class="rail-btn" data-view="friends" title="Friends">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19.5c0-3.3 2.5-5.5 5.5-5.5s5.5 2.2 5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 5.6a3.2 3.2 0 010 5.6M17.5 14.4c2 .7 3.3 2.6 3.3 5.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span class="rail-dot" id="friends-dot" hidden></span>
+    </button>
+    <button class="rail-btn" data-view="servers" title="Servers">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="3.5" y="13.5" width="17" height="6" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="16.5" r="1" fill="currentColor"/></svg>
+    </button>
+    <button class="rail-btn" data-view="notes" title="Patch Notes">
+      <svg viewBox="0 0 24 24"><path d="M6 3.5h9l4 4v13H6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14.5 3.5V8H19M9 12h6M9 15.5h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" data-view="settings" title="Settings">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.6M12 18.6v2.6M4.3 7.3l2.2 1.3M17.5 15.4l2.2 1.3M4.3 16.7l2.2-1.3M17.5 8.6l2.2-1.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+    </button>
+  </nav>
+
+  <main class="main">
+    <!-- Top bar: version pills, then account -->
+    <header class="topbar">
+      <div class="pills" id="version-pills"></div>
+      <div class="topbar-right">
+        <button class="ghost-btn" id="btn-invite">Invite a friend</button>
+        <div class="account" id="account-chip">
+          <img class="account-head" id="account-head" src="" alt="" />
+          <span class="account-name" id="account-name">Not signed in</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- HOME -->
+    <section class="view active" data-view="home">
+      <div class="hero">
+        <div class="hero-art" id="hero-art"></div>
+        <div class="hero-text">
+          <div class="eyebrow">Ready when you are</div>
+          <h1 id="hero-title">Minecraft</h1>
+          <p class="hero-sub" id="hero-sub">Pick a version and press play.</p>
+        </div>
+        <div class="hero-actions">
+          <select class="select" id="home-profile"></select>
+          <button class="play-btn" id="btn-play"><span>PLAY</span></button>
+        </div>
+      </div>
+
+      <div class="progress-card" id="progress-card" hidden>
+        <div class="progress-head">
+          <span id="progress-stage">Preparing</span>
+          <span id="progress-count"></span>
+        </div>
+        <div class="progress-track"><span id="progress-fill"></span></div>
+        <div class="progress-detail" id="progress-detail"></div>
+      </div>
+
+      <div class="panel console-panel" id="console-panel" hidden>
+        <div class="panel-head">
+          <h3>Game output</h3>
+          <button class="ghost-btn small" id="btn-stop">Stop</button>
+        </div>
+        <pre class="console" id="console"></pre>
+      </div>
+    </section>
+
+    <!-- VERSIONS -->
+    <section class="view" data-view="versions">
+      <div class="view-head"><h2>Versions</h2></div>
+
+      <div class="version-layout">
+        <!-- Sidebar: every version, filterable -->
+        <aside class="version-sidebar">
+          <div class="sidebar-head">
+            <div class="search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <input class="search-input" id="version-filter" placeholder="Filter versions" />
+            </div>
+            <label class="check compact"><input type="checkbox" id="show-snapshots" /> <span>Snapshots &amp; old</span></label>
+          </div>
+          <div class="version-list" id="version-list"></div>
+          <div class="sidebar-foot" id="gallery-note"></div>
+        </aside>
+
+        <!-- Detail: the picked version, and the profile you build from it -->
+        <section class="version-detail">
+          <div class="detail-art" id="detail-art">
+            <div class="detail-art-fade"></div>
+            <div class="detail-heading">
+              <h3 id="detail-title">Pick a version</h3>
+              <div class="detail-meta" id="detail-meta"></div>
+            </div>
+          </div>
+
+          <div class="detail-body">
+            <select class="select" id="pick-version" hidden></select>
+            <div class="builder-row">
+              <div class="field">
+                <label>Mod loader</label>
+                <select class="select" id="pick-loader"></select>
+              </div>
+              <div class="field">
+                <label>Loader build</label>
+                <select class="select" id="pick-loader-version"></select>
+              </div>
+              <div class="field grow">
+                <label>Profile name</label>
+                <input class="input" id="pick-name" placeholder="Auto" />
+              </div>
+              <button class="primary-btn" id="btn-create">Create profile</button>
+            </div>
+            <div class="builder-note" id="loader-note"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="view-head"><h3>Your profiles</h3></div>
+      <div class="profile-grid" id="profile-grid"></div>
+    </section>
+
+    <!-- MODS -->
+    <section class="view" data-view="mods">
+      <div class="view-head">
+        <h2>Browse Mods</h2>
+        <div class="mods-target" id="mods-target"></div>
+        <button class="ghost-btn small" id="btn-open-mods">Open folder</button>
+      </div>
+
+      <div class="type-switch" id="content-type">
+        <button class="type-btn active" data-type="mod">Mods</button>
+        <button class="type-btn" data-type="shader">Shaders</button>
+      </div>
+
+      <div class="mods-bar">
+        <div class="tabs" id="mod-categories"></div>
+        <div class="mods-bar-right">
+          <select class="select compact" id="mod-sort">
+            <option value="relevance">Relevance</option>
+            <option value="downloads">Downloads</option>
+            <option value="follows">Followers</option>
+            <option value="newest">Newest</option>
+            <option value="updated">Updated</option>
+          </select>
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 16l4.5 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input class="search-input" id="mod-search" placeholder="Search mods" />
+          </div>
+        </div>
+      </div>
+
+      <div class="note-line" id="mod-note"></div>
+      <div class="mod-grid" id="mod-grid"></div>
+      <div class="mods-footer">
+        <button class="ghost-btn" id="btn-mods-more" hidden>Load more</button>
+        <span class="mods-count" id="mods-count"></span>
+      </div>
+
+      <div class="view-head"><h3>Installed in this profile</h3></div>
+      <div class="installed-list" id="installed-list"></div>
+    </section>
+
+    <!-- WARDROBE -->
+    <section class="view" data-view="wardrobe">
+      <div class="view-head">
+        <h2>Wardrobe</h2>
+        <span class="coin-chip" id="wardrobe-coins">0 coins</span>
+      </div>
+      <div class="wardrobe-layout">
+        <div class="wardrobe-preview panel">
+          <div class="cape-stage" id="cape-stage">
+            <div class="cape-shell" id="cape-shell"><div class="cape-empty">No cape equipped</div></div>
+          </div>
+          <div class="preview-name" id="preview-name">Nothing equipped</div>
+          <div class="preview-actions">
+            <button class="ghost-btn small" id="btn-unequip">Unequip</button>
+            <button class="primary-btn" id="btn-equip">Equip</button>
+          </div>
+        </div>
+
+        <div class="wardrobe-side">
+          <div class="panel">
+            <h3>Your cosmetics</h3>
+            <div class="cosmetic-grid" id="owned-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHOP -->
+    <section class="view" data-view="shop">
+      <div class="view-head">
+        <h2>Shop</h2>
+        <span class="coin-chip" id="shop-coins">0 coins</span>
+        <span class="hint-inline" id="season-note"></span>
+      </div>
+      <div class="panel daily-panel" id="daily-panel">
+        <div class="daily-inner">
+          <div class="daily-text">
+            <h3>Daily coins</h3>
+            <p class="daily-sub" id="daily-sub">Come back each day for more.</p>
+          </div>
+          <div class="daily-streak" id="daily-streak"></div>
+          <button class="primary-btn" id="btn-daily">Claim</button>
+        </div>
+      </div>
+
+      <div class="panel challenges-panel">
+        <div class="panel-head">
+          <h3>Daily challenges</h3>
+          <span class="hint-inline" id="challenge-day"></span>
+        </div>
+        <div class="challenge-list" id="challenge-list"></div>
+      </div>
+      <div class="view-head"><h3>Cosmetics</h3></div>
+      <div class="shop-grid" id="shop-grid"></div>
+    </section>
+
+    <!-- FRIENDS -->
+    <section class="view" data-view="friends">
+      <div class="view-head">
+        <h2>Friends</h2>
+        <span class="hint-inline" id="friends-status"></span>
+      </div>
+      <div class="panel">
+        <div class="builder-row">
+          <div class="field grow">
+            <label>Add someone by their Minecraft name</label>
+            <input class="input" id="friend-name" placeholder="Username" />
+          </div>
+          <button class="primary-btn" id="btn-add-friend">Send request</button>
+          <button class="ghost-btn" id="btn-refresh-friends">Refresh</button>
+        </div>
+      </div>
+      <div class="friend-list" id="friend-list"></div>
+
+      <div class="view-head"><h3>Share a mod profile</h3></div>
+      <div class="panel">
+        <p class="hint-block">Turn the selected profile - its version, loader and every mod
+          in it - into a short code your friends can paste to get exactly the same setup.</p>
+        <div class="builder-row">
+          <button class="primary-btn" id="btn-share-profile">Create a code</button>
+          <div class="share-code" id="share-code" hidden></div>
+          <div class="field grow">
+            <label>Have a code?</label>
+            <input class="input" id="import-code" placeholder="e.g. 8W35SC" maxlength="8" />
+          </div>
+          <button class="ghost-btn" id="btn-import-code">Import</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVERS -->
+    <section class="view" data-view="servers">
+      <div class="view-head">
+        <h2>Servers</h2>
+        <span class="hint-inline">Drag to reorder - your list is saved</span>
+      </div>
+      <div class="panel">
+        <div class="builder-row">
+          <div class="field grow">
+            <label>Add a server</label>
+            <input class="input" id="server-address" placeholder="play.example.net" />
+          </div>
+          <button class="primary-btn" id="btn-add-server">Add</button>
+        </div>
+      </div>
+      <div class="server-list" id="server-list"></div>
+    </section>
+
+    <!-- PATCH NOTES -->
+    <section class="view" data-view="notes">
+      <div class="view-head">
+        <h2>Patch Notes</h2>
+        <span class="hint-inline" id="notes-version"></span>
+      </div>
+      <div class="notes-list" id="notes-list"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" data-view="settings">
+      <div class="view-head"><h2>Settings</h2></div>
+
+      <div class="panel">
+        <h3>Game</h3>
+        <div class="setting">
+          <div><strong>Memory</strong><span class="hint">How much RAM Minecraft may use</span></div>
+          <div class="setting-control">
+            <input type="range" id="set-memory" min="1024" max="16384" step="512" />
+            <span class="value" id="set-memory-value"></span>
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong>Window size</strong><span class="hint">Resolution the game opens at</span></div>
+          <div class="setting-control">
+            <input class="input tiny" id="set-width" type="number" min="640" />
+            <span class="times">x</span>
+            <input class="input tiny" id="set-height" type="number" min="480" />
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong>Game folder</strong><span class="hint" id="set-dir-value"></span></div>
+          <div class="setting-control"><button class="ghost-btn" id="btn-pick-dir">Change</button></div>
+        </div>
+        <div class="setting">
+          <div><strong>Java</strong><span class="hint" id="set-java-value">Detected automatically</span></div>
+          <div class="setting-control">
+            <button class="ghost-btn" id="btn-scan-java">Scan</button>
+            <button class="ghost-btn" id="btn-pick-java">Choose</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong>JVM arguments</strong><span class="hint">Advanced - leave alone unless you know why</span></div>
+          <div class="setting-control"><input class="input wide" id="set-jvm" /></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Launcher</h3>
+        <div class="setting">
+          <div><strong>Background video</strong><span class="hint">Turn off to save a little GPU</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-bg" /><span></span></label></div>
+        </div>
+        <div class="setting">
+          <div><strong>Music</strong><span class="hint">The Astra theme</span></div>
+          <div class="setting-control">
+            <label class="switch"><input type="checkbox" id="set-music" /><span></span></label>
+            <input type="range" id="set-volume" min="0" max="1" step="0.05" />
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong>Minimise on launch</strong><span class="hint">Get out of the way once the game starts</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-close" /><span></span></label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Appearance</h3>
+        <div class="setting">
+          <div><strong>Menu background</strong><span class="hint">Pick the backdrop, like Minecraft's panoramas</span></div>
+          <div class="setting-control"><span class="hint" id="bg-name"></span></div>
+        </div>
+        <div class="bg-picker" id="bg-picker"></div>
+        <div class="setting">
+          <div><strong>Seasonal themes</strong><span class="hint">Halloween in October, winter in December</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-seasonal" /><span></span></label></div>
+        </div>
+        <div class="setting">
+          <div><strong>Featured seasonal profile</strong><span class="hint" id="seasonal-hint">Offers the matching Minecraft event version</span></div>
+          <div class="setting-control"><button class="ghost-btn" id="btn-seasonal-profile">Create it</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Performance</h3>
+        <div class="setting">
+          <div><strong>Preset</strong><span class="hint">Tunes JVM flags, render distance and Minecraft's own options</span></div>
+          <div class="setting-control"><select class="select" id="set-perf">
+            <option value="balanced">Balanced</option>
+            <option value="fps">Max FPS</option>
+            <option value="quality">Quality</option>
+            <option value="potato">Potato PC</option>
+          </select></div>
+        </div>
+        <div class="setting">
+          <div><strong>Priority</strong><span class="hint">Windows process priority for the game</span></div>
+          <div class="setting-control"><select class="select" id="set-priority">
+            <option value="normal">Normal</option>
+            <option value="above">Above normal</option>
+            <option value="high">High</option>
+          </select></div>
+        </div>
+        <div class="setting">
+          <div><strong>Apply to Minecraft options</strong><span class="hint">Writes render distance, particles and vsync into options.txt</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-write-options" /><span></span></label></div>
+        </div>
+        <div class="setting">
+          <div><strong>Discord presence</strong><span class="hint" id="discord-state">Shows what you are playing</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-discord" /><span></span></label></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Astra account</h3>
+        <div class="setting">
+          <div><strong>Server</strong><span class="hint">Friends, shop and challenges come from here</span></div>
+          <div class="setting-control">
+            <input class="input wide" id="set-server-url" placeholder="http://localhost:8787" />
+            <button class="ghost-btn" id="btn-save-server">Save</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong id="astra-state">Not connected</strong><span class="hint" id="astra-hint">Sign in to Minecraft first, then connect</span></div>
+          <div class="setting-control"><button class="ghost-btn" id="btn-connect-astra">Connect</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Updates</h3>
+        <div class="setting">
+          <div><strong id="update-version">Astra Client</strong><span class="hint" id="update-status">Checking...</span></div>
+          <div class="setting-control">
+            <button class="ghost-btn" id="btn-check-update">Check for updates</button>
+            <button class="primary-btn" id="btn-install-update" hidden>Install</button>
+            <button class="primary-btn" id="btn-restart" hidden>Restart now</button>
+          </div>
+        </div>
+        <div class="setting">
+          <div><strong>Update source</strong><span class="hint">The GitHub repo that hosts update.json</span></div>
+          <div class="setting-control">
+            <input class="input" id="update-owner" placeholder="github-user" />
+            <span class="times">/</span>
+            <input class="input" id="update-repo" placeholder="astra-client" />
+            <button class="ghost-btn" id="btn-save-repo">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Account</h3>
+        <div class="setting">
+          <div><strong id="set-account-name">Not signed in</strong><span class="hint">Microsoft account</span></div>
+          <div class="setting-control">
+            <button class="primary-btn" id="btn-signin">Sign in</button>
+            <button class="ghost-btn" id="btn-signout" hidden>Sign out</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

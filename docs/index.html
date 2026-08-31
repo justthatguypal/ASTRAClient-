@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Astra Client - a Minecraft launcher worth using</title>
+<meta name="description" content="Every Minecraft version, every mod loader, a built-in mod and shader browser, live capes and friends you can drop straight into." />
+<link rel="icon" href="assets/icon.png" />
+<link rel="stylesheet" href="css/site.css?v=2" />
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="#top">
+    <img src="assets/icon.png" alt="" />
+    <span>Astra Client</span>
+  </a>
+  <nav class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#cosmetics">Cosmetics</a>
+    <a href="#profiles">Share a profile</a>
+    <a href="#download" class="nav-cta">Download</a>
+  </nav>
+</header>
+
+<section class="hero" id="top">
+  <div class="hero-bg"></div>
+  <div class="hero-inner">
+    <img class="hero-logo" src="assets/icon.png" alt="Astra Client" />
+    <h1>Every version. Every loader.<br />One launcher.</h1>
+    <p class="lede">
+      Astra installs the right Java for you, so 1.8 works as readily as the newest
+      snapshot. Browse mods and shaders without leaving it, wear a cape that actually
+      moves, and drop straight into whatever server your friends are on.
+    </p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#download">Download for Windows</a>
+      <a class="btn ghost" href="https://github.com/justthatguypal/ASTRAClient-" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <p class="hero-note">Free. No account beyond the Microsoft one you already have.</p>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="strip-item"><strong id="stat-versions">900+</strong><span>Minecraft versions</span></div>
+  <div class="strip-item"><strong>4</strong><span>Mod loaders</span></div>
+  <div class="strip-item"><strong>16k+</strong><span>Mods to browse</span></div>
+  <div class="strip-item"><strong>42 KB</strong><span>Typical update</span></div>
+</section>
+
+<section class="section" id="features">
+  <h2>What it does</h2>
+  <div class="grid">
+    <article class="card">
+      <h3>Old versions actually run</h3>
+      <p>1.8 and 1.12 need Java 8, and nobody has Java 8 lying around. Astra reads what
+        each version asks for and fetches that exact runtime from Mojang, so the
+        launchwrapper crash everyone hits simply never happens.</p>
+    </article>
+    <article class="card">
+      <h3>Snapshots install cleanly</h3>
+      <p>Modern versions list native libraries for three CPU architectures under one
+        rule. Astra matches them to your machine instead of grabbing whichever came
+        first - the usual cause of a snapshot refusing to download.</p>
+    </article>
+    <article class="card">
+      <h3>Mods and shaders built in</h3>
+      <p>Search everything on Modrinth, filtered to your profile's loader and version.
+        Required dependencies come along automatically, which is the fix for the most
+        common "modded profile won't start" problem.</p>
+    </article>
+    <article class="card">
+      <h3>Friends you can join</h3>
+      <p>See who is online, what they are playing and where. One button puts you on the
+        same server.</p>
+    </article>
+    <article class="card">
+      <h3>Updates measured in kilobytes</h3>
+      <p>The runtime never changes, so only the code that did is downloaded. A normal
+        update is about 42 KB rather than reinstalling 80 MB.</p>
+    </article>
+    <article class="card">
+      <h3>Real performance work</h3>
+      <p>Presets that set genuine JVM flags and write Minecraft's own options, from
+        Quality down to Potato PC. Honest latency to every server in your list -
+        no spoofing.</p>
+    </article>
+  </div>
+</section>
+
+<section class="section alt" id="cosmetics">
+  <h2>Capes that move</h2>
+  <p class="section-lede">
+    Live capes are real video, not a flipbook - a whole scene moving on your back.
+  </p>
+  <div class="capes">
+    <figure class="cape wide">
+      <video src="assets/aurora.mp4" autoplay muted loop playsinline></video>
+      <figcaption>Aurora <span class="tag live">Live</span></figcaption>
+    </figure>
+  </div>
+  <p class="section-note">
+    Cosmetics are earned with coins from daily challenges. There is no way to buy coins
+    with money, on purpose.
+  </p>
+</section>
+
+<section class="section" id="profiles">
+  <h2>Share a setup with a code</h2>
+  <p class="section-lede">
+    Turn a whole profile - version, loader and every mod in it - into six characters.
+    Paste one here to see what is inside before you import it.
+  </p>
+  <div class="code-box">
+    <input id="code-input" maxlength="8" placeholder="e.g. 8W35SC" autocomplete="off" spellcheck="false" />
+    <button id="code-go" class="btn primary">Look it up</button>
+  </div>
+  <div id="code-result" class="code-result" hidden></div>
+  <p class="section-note" id="code-hint">
+    Codes use no vowels and no look-alike characters, so they survive being read aloud.
+  </p>
+</section>
+
+<section class="section alt" id="download">
+  <h2>Get Astra</h2>
+  <div class="downloads">
+    <a class="download primary" id="dl-setup" href="https://github.com/justthatguypal/ASTRAClient-/releases/latest" target="_blank" rel="noopener">
+      <strong>Installer</strong>
+      <span>Windows &middot; recommended</span>
+    </a>
+    <a class="download" id="dl-zip" href="https://github.com/justthatguypal/ASTRAClient-/releases/latest" target="_blank" rel="noopener">
+      <strong>Portable</strong>
+      <span>Zip, no installer</span>
+    </a>
+  </div>
+  <p class="section-note">
+    Installs for your user only - no administrator prompt. Uninstalling leaves your
+    worlds and profiles alone.
+  </p>
+</section>
+
+<footer class="footer">
+  <img src="assets/icon.png" alt="" />
+  <p>Astra Client. Not affiliated with Mojang or Microsoft. Minecraft is a trademark of Mojang AB.</p>
+  <p class="footer-links">
+    <a href="https://github.com/justthatguypal/ASTRAClient-" target="_blank" rel="noopener">GitHub</a>
+  </p>
+</footer>
+
+<script src="js/site.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "astra-client",
+  "productName": "Astra Client",
+  "version": "1.0.0",
+  "description": "Moon-themed Minecraft launcher - Microsoft sign in, every version, every mod loader, a built-in mod browser and in-app updates",
+  "main": "main.js",
+  "author": "Astra Client",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "server": "node server/server.js",
+    "installer": "node tools/installer.js",
+    "build": "node tools/build.js",
+    "manifest": "node tools/manifest.js",
+    "publish": "node tools/github.js publish",
+    "github": "node tools/github.js",
+    "autostart": "node tools/autostart.js",
+    "capes": "python tools/gen_capes.py"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "rcedit": "^5.0.2"
+  }
+}
