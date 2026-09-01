@@ -50,12 +50,18 @@ contextBridge.exposeInMainWorld('astra', {
       return () => ipcRenderer.removeListener('launch:event', listener);
     }
   },
+  doctor: {
+    diagnose: (profileId, log) => ipcRenderer.invoke('doctor:diagnose', profileId, log),
+    check: (profileId) => ipcRenderer.invoke('doctor:check', profileId),
+    fix: (profileId, fix) => ipcRenderer.invoke('doctor:fix', profileId, fix)
+  },
+
   mods: {
     search: (options) => ipcRenderer.invoke('mods:search', options),
     install: (profileId, projectId) => ipcRenderer.invoke('mods:install', profileId, projectId),
     installed: (profileId) => ipcRenderer.invoke('mods:installed', profileId),
-    remove: (profileId, filename) => ipcRenderer.invoke('mods:remove', profileId, filename),
-    toggle: (profileId, filename) => ipcRenderer.invoke('mods:toggle', profileId, filename),
+    remove: (profileId, filename, kind) => ipcRenderer.invoke('mods:remove', profileId, filename, kind),
+    toggle: (profileId, filename, kind) => ipcRenderer.invoke('mods:toggle', profileId, filename, kind),
     onProgress: (handler) => {
       const listener = (_event, payload) => handler(payload);
       ipcRenderer.on('mods:progress', listener);
@@ -74,6 +80,12 @@ contextBridge.exposeInMainWorld('astra', {
       ipcRenderer.on('update:progress', listener);
       return () => ipcRenderer.removeListener('update:progress', listener);
     }
+  },
+  packs: {
+    search: (options) => ipcRenderer.invoke('packs:search', options),
+    install: (profileId, projectId) => ipcRenderer.invoke('packs:install', profileId, projectId),
+    installed: (profileId) => ipcRenderer.invoke('mods:installed', profileId, 'resourcepack'),
+    folder: (profileId) => ipcRenderer.invoke('packs:folder', profileId)
   },
   shaders: {
     search: (options) => ipcRenderer.invoke('shaders:search', options),

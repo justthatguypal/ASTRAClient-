@@ -197,6 +197,18 @@ function applyMusic() {
   theme.volume = Number(musicVolume) || 0.35;
   $('#btn-music').classList.toggle('on', Boolean(musicEnabled));
 
+  // Seasonal track replaces the usual one while a season is on.
+  const season = typeof currentSeason === 'function' ? currentSeason() : null;
+  const seasonal = season && state.settings.seasonMedia !== false ? SEASONS[season] : null;
+  const wanted = seasonal ? seasonal.music : '../assets/theme.mp3';
+
+  if (!theme.src.endsWith(wanted.replace('../', ''))) {
+    const wasPlaying = !theme.paused;
+    theme.src = wanted;
+    theme.load();
+    if (wasPlaying && musicEnabled) theme.play().catch(() => {});
+  }
+
   if (musicEnabled) {
     // Chromium blocks autoplay until the user has interacted with the page, so the
     // first real click is what actually starts it.
@@ -228,8 +240,16 @@ const BACKGROUNDS = [
 function applyBackground() {
   const video = $('#bg-video');
   const still = $('#bg-still');
-  const choice = state.settings.background || 'aurora.mp4';
   const enabled = state.settings.backgroundEnabled !== false;
+
+  // A season takes over the backdrop unless seasonal media is switched off.
+  const season = typeof currentSeason === 'function' ? currentSeason() : null;
+  const seasonal = season && state.settings.seasonMedia !== false ? SEASONS[season] : null;
+  const choice = seasonal ? seasonal.background : (state.settings.background || 'aurora.mp4');
+
+  const tint = seasonal ? seasonal.filter : '';
+  video.style.filter = tint;
+  still.style.filter = tint;
 
   if (!enabled) {
     video.classList.add('off');
@@ -239,6 +259,12 @@ function applyBackground() {
   }
 
   if (choice.endsWith('.mp4')) {
+    // Seasonal clips live beside the default one, so the source may need swapping.
+    const wanted = `../assets/${choice === 'aurora.mp4' ? 'background.mp4' : choice}`;
+    if (!video.src.endsWith(wanted.replace('../', ''))) {
+      video.src = wanted;
+      video.load();
+    }
     video.classList.remove('off');
     video.play().catch(() => {});
     still.style.opacity = '0';
@@ -275,31 +301,76 @@ function renderBackgroundPicker() {
     });
     picker.appendChild(option);
   }
-  $('#bg-name').textContent =
-    (BACKGROUNDS.find((b) => b.id === state.settings.background) || BACKGROUNDS[0]).label;
+  const season = currentSeason();
+  $('#bg-name').textContent = season && state.settings.seasonMedia !== false
+    ? `${SEASONS[season].label} season is using its own backdrop`
+    : (BACKGROUNDS.find((b) => b.id === state.settings.background) || BACKGROUNDS[0]).label;
 }
 
-/** October and December repaint the accent colour, if the toggle is on. */
-function currentSeason() {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
+/**
+ * Seasons.
+ *
+ * Each one repaints the accent colours, swaps the backdrop and changes the music. The
+ * mode can be forced rather than only following the calendar - without that the whole
+ * feature is invisible for ten months of the year and looks broken when you toggle it.
+ */
+const SEASONS = {
+  halloween: {
+    label: 'Halloween',
+    background: 'bg2.jpg',
+    filter: 'sepia(.45) hue-rotate(-18deg) saturate(1.5) brightness(.72)',
+    music: '../assets/seasonal/halloween.mp3',
+    profileName: 'Halloween Event'
+  },
+  christmas: {
+    label: 'Festive',
+    background: 'seasonal/christmas.mp4',
+    filter: 'saturate(1.1)',
+    music: '../assets/seasonal/christmas.mp3',
+    profileName: 'Festive Event'
+  }
+};
+
+/** What the calendar says, ignoring any override. */
+function calendarSeason(date = new Date()) {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
   if (month === 10) return 'halloween';
   if (month === 12 || (month === 1 && day <= 5)) return 'christmas';
   return null;
 }
 
+/** The season actually in effect, honouring the setting. */
+function currentSeason() {
+  const mode = state.settings.seasonMode || 'auto';
+  if (mode === 'off') return null;
+  if (mode === 'auto') return calendarSeason();
+  return SEASONS[mode] ? mode : null;
+}
+
 function applySeason() {
+  const season = currentSeason();
   document.body.classList.remove('season-halloween', 'season-christmas');
-  const season = state.settings.seasonalThemes === false ? null : currentSeason();
   if (season) document.body.classList.add(`season-${season}`);
 
   const hint = $('#seasonal-hint');
   if (hint) {
+    const calendar = calendarSeason();
+    const mode = state.settings.seasonMode || 'auto';
     hint.textContent = season
-      ? `${season} is on now - creates a featured profile for the event version`
-      : 'Nothing in season right now (October and December)';
+      ? `${SEASONS[season].label} is on${mode !== 'auto' ? ' (forced)' : ' now'}`
+      : calendar ? 'Turned off' : 'Nothing in season - Halloween in October, festive in December';
   }
+
+  const profileHint = $('#seasonal-profile-hint');
+  if (profileHint) {
+    profileHint.textContent = season
+      ? `Creates a "${SEASONS[season].profileName}" profile on the newest release`
+      : 'Pick a season first';
+  }
+
+  applyBackground();
+  applyMusic();
   return season;
 }
 
@@ -640,8 +711,17 @@ $('#btn-play').addEventListener('click', async () => {
   $('#progress-card').hidden = false;
   $('#console').textContent = '';
   $('#console-panel').hidden = true;
+  $('#doctor-panel').hidden = true;
+  crashLog.length = 0;
 
   try {
+    // Catch a mod that cannot possibly load here before spending a launch on it.
+    // Never fatal: a check that fails must not stop someone playing.
+    try {
+      const problems = await window.astra.doctor.check(state.selected);
+      if (problems.length) showDoctor(problems, 'Before you play');
+    } catch (_) { /* the game still gets its chance */ }
+
     await window.astra.launch.start(state.selected);
   } catch (err) {
     toast(err.message, 'error');
@@ -654,6 +734,113 @@ $('#btn-play').addEventListener('click', async () => {
 $('#btn-stop').addEventListener('click', async () => {
   await window.astra.launch.stop();
   toast('Stopped Minecraft');
+});
+
+// ---------------------------------------------------------------- doctor
+
+/*
+ * When the game exits badly, read the log it just printed, say which mod did it,
+ * and offer the repair.
+ *
+ * Fixes are always a button, never automatic. Disabling the wrong mod silently
+ * would be worse than the crash, and the log is not always conclusive - so Astra
+ * says what it thinks and lets the player decide.
+ */
+
+const crashLog = [];
+
+function showDoctor(findings, title) {
+  const panel = $('#doctor-panel');
+  const list = $('#doctor-list');
+  $('#doctor-title').textContent = title || 'What went wrong';
+  list.innerHTML = '';
+
+  for (const finding of findings) {
+    const item = document.createElement('div');
+    item.className = `doctor-item ${finding.severity || 'warn'}`;
+
+    const text = document.createElement('div');
+    text.className = 'doctor-text';
+
+    const heading = document.createElement('h4');
+    heading.textContent = finding.title;
+    const detail = document.createElement('p');
+    detail.textContent = finding.detail;
+    text.append(heading, detail);
+
+    if (finding.mod) {
+      const tag = document.createElement('span');
+      tag.className = 'doctor-mod';
+      tag.textContent = finding.mod.version
+        ? `${finding.mod.name}  ${finding.mod.version}`
+        : finding.mod.name;
+      text.appendChild(tag);
+    }
+
+    item.appendChild(text);
+
+    if (finding.fix) {
+      const button = document.createElement('button');
+      button.className = 'primary-btn small';
+      button.textContent = {
+        disable: 'Turn it off', install: 'Get it', replace: 'Get the right one',
+        memory: 'Fix memory'
+      }[finding.fix.type] || 'Fix it';
+
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = 'Working...';
+        try {
+          const result = await window.astra.doctor.fix(state.selected, finding.fix);
+          toast(result.message, 'ok');
+          button.textContent = 'Done';
+          // A memory fix changes settings the panel is showing.
+          if (result.settings) {
+            state.settings = await window.astra.settings.get();
+            $('#set-memory').value = state.settings.memoryMb;
+            $('#set-memory-value').textContent =
+              `${(state.settings.memoryMb / 1024).toFixed(1)} GB`;
+          }
+        } catch (err) {
+          toast(err.message, 'error');
+          button.disabled = false;
+          button.textContent = 'Try again';
+        }
+      });
+
+      item.appendChild(button);
+    }
+
+    list.appendChild(item);
+  }
+
+  panel.hidden = false;
+  popIn(list);
+}
+
+async function runDoctor() {
+  if (!state.selected || !crashLog.length) return;
+  try {
+    const findings = await window.astra.doctor.diagnose(state.selected, crashLog);
+    if (findings.length) {
+      showDoctor(findings);
+    } else {
+      showDoctor([{
+        severity: 'warn',
+        title: 'Astra could not work out what went wrong',
+        detail: 'Nothing in the log matched a known cause. The full output is below - '
+          + 'the last error line in it is usually the culprit.',
+        mod: null,
+        fix: null
+      }]);
+    }
+  } catch (err) {
+    toast(`Could not read the crash: ${err.message}`, 'error');
+  }
+}
+
+$('#btn-doctor-close').addEventListener('click', () => {
+  $('#doctor-panel').hidden = true;
 });
 
 window.astra.launch.onEvent((event) => {
@@ -676,6 +863,12 @@ window.astra.launch.onEvent((event) => {
     $('#console-panel').hidden = false;
     toast(`Minecraft ${event.versionId} is starting`, 'ok');
   } else if (event.type === 'log') {
+    // The console element is trimmed to its tail for display, so the log used for
+    // a diagnosis is kept separately - a crash cause is usually printed well before
+    // the 500 lines of shutdown noise that follow it.
+    crashLog.push(event.line);
+    while (crashLog.length > 3000) crashLog.shift();
+
     const console_ = $('#console');
     const line = document.createElement('div');
     if (event.channel === 'err') line.className = 'err';
@@ -689,6 +882,7 @@ window.astra.launch.onEvent((event) => {
     updatePlayState();
     toast(event.code === 0 ? 'Minecraft closed' : `Minecraft exited with code ${event.code}`,
       event.code === 0 ? '' : 'error');
+    if (event.code !== 0) runDoctor();
   } else if (event.type === 'error') {
     state.launching = false;
     updatePlayState();
@@ -773,10 +967,20 @@ function bindSettings() {
   $('#show-snapshots').checked = s.showSnapshots;
 
   // ---- appearance ----
-  $('#set-seasonal').checked = s.seasonalThemes !== false;
-  $('#set-seasonal').addEventListener('change', async (e) => {
-    s.seasonalThemes = e.target.checked;
-    await window.astra.settings.set({ seasonalThemes: e.target.checked });
+  $('#set-season').value = s.seasonMode || 'auto';
+  $('#set-season').addEventListener('change', async (e) => {
+    s.seasonMode = e.target.value;
+    await window.astra.settings.set({ seasonMode: e.target.value });
+    applySeason();
+    renderBackgroundPicker();
+    const season = currentSeason();
+    toast(season ? `${SEASONS[season].label} theme on` : 'Seasonal theme off', 'ok');
+  });
+
+  $('#set-season-media').checked = s.seasonMedia !== false;
+  $('#set-season-media').addEventListener('change', async (e) => {
+    s.seasonMedia = e.target.checked;
+    await window.astra.settings.set({ seasonMedia: e.target.checked });
     applySeason();
   });
 
@@ -853,12 +1057,12 @@ async function connectAstra(quiet) {
  */
 async function createSeasonalProfile() {
   const season = currentSeason();
-  if (!season) return toast('No season is running right now', 'error');
+  if (!season) return toast('Pick a season first, or wait for October', 'error');
 
   const version = state.latest.release || (releaseVersions()[0] || {}).id;
   if (!version) return toast('Version list is still loading', 'error');
 
-  const name = season === 'halloween' ? 'Halloween Event' : 'Winter Event';
+  const name = SEASONS[season].profileName;
   const existing = state.profiles.find((p) => p.name === name);
   if (existing) {
     state.selected = existing.id;
@@ -1028,6 +1232,7 @@ async function updateHeroArt() {
 
 const MOD_CATEGORIES = [
   { id: '', label: 'All' },
+  { id: 'horror', label: 'Horror' },
   { id: 'optimization', label: 'Performance' },
   { id: 'utility', label: 'Utility' },
   { id: 'adventure', label: 'Adventure' },
@@ -1048,12 +1253,48 @@ const SHADER_CATEGORIES = [
   { id: 'atmosphere', label: 'Atmosphere' }
 ];
 
+// Resource packs are tagged by what they change rather than what they add.
+const PACK_CATEGORIES = [
+  { id: '', label: 'All' },
+  { id: 'realistic', label: 'Realistic' },
+  { id: 'simplistic', label: 'Simplistic' },
+  { id: 'vanilla-like', label: 'Vanilla+' },
+  { id: 'decoration', label: 'Decoration' },
+  { id: 'gui', label: 'GUI' },
+  { id: 'audio', label: 'Audio' },
+  { id: 'modded', label: 'Modded' }
+];
+
 function isShaders() {
   return state.mods.type === 'shader';
 }
 
+function isPacks() {
+  return state.mods.type === 'resourcepack';
+}
+
+/** Mods are the only kind that cares which loader a profile uses. */
+function isLoaderBound() {
+  return state.mods.type === 'mod';
+}
+
 function categoriesForType() {
-  return isShaders() ? SHADER_CATEGORIES : MOD_CATEGORIES;
+  if (isShaders()) return SHADER_CATEGORIES;
+  if (isPacks()) return PACK_CATEGORIES;
+  return MOD_CATEGORIES;
+}
+
+/** The API trio for whichever kind is showing. */
+function contentApi() {
+  if (isShaders()) return window.astra.shaders;
+  if (isPacks()) return window.astra.packs;
+  return window.astra.mods;
+}
+
+function contentNoun(plural) {
+  if (isShaders()) return plural ? 'shaders' : 'shader';
+  if (isPacks()) return plural ? 'resource packs' : 'resource pack';
+  return plural ? 'mods' : 'mod';
 }
 
 /** Switches the whole tab between mods and shader packs. */
@@ -1066,7 +1307,7 @@ function setContentType(type) {
   state.mods.loaded = false;
 
   $('#mod-search').value = '';
-  $('#mod-search').placeholder = type === 'shader' ? 'Search shaders' : 'Search mods';
+  $('#mod-search').placeholder = `Search ${contentNoun(true)}`;
   $$('#content-type .type-btn').forEach(function (b) {
     b.classList.toggle('active', b.dataset.type === type);
   });
@@ -1109,12 +1350,15 @@ function refreshModsTarget() {
   if (note) {
     note.textContent = isShaders()
       ? 'Shader packs need Iris (Fabric) or OptiFine in the profile to load.'
-      : '';
+      : isPacks()
+        ? 'Turn a pack on in Options > Resource Packs once the game is running.'
+        : '';
   }
 
   if (!profile) {
     target.innerHTML = 'No profile selected';
-  } else if (isShaders()) {
+  } else if (!isLoaderBound()) {
+    // Shaders and resource packs work on any profile, loader or not.
     target.innerHTML = 'Installing into <strong>' + profile.name + '</strong> ('
       + profile.mcVersion + ')';
   } else if (profile.loader === 'vanilla') {
@@ -1164,12 +1408,10 @@ async function runModSearch(reset) {
       limit: 30,
       gameVersion: profile ? profile.mcVersion : undefined
     };
-    // Asking Modrinth for a loader build of a shader pack finds nothing.
-    if (!isShaders() && profile) options.loader = profile.loader;
+    // Only mods are loader specific; asking for a loader build of a pack finds nothing.
+    if (isLoaderBound() && profile) options.loader = profile.loader;
 
-    const result = isShaders()
-      ? await window.astra.shaders.search(options)
-      : await window.astra.mods.search(options);
+    const result = await contentApi().search(options);
 
     // A slower earlier search must not overwrite a newer one.
     if (token !== searchToken) return;
@@ -1269,9 +1511,7 @@ async function installMod(mod, button) {
   button.innerHTML = '<span class="spinner"></span>';
 
   try {
-    const files = isShaders()
-      ? await window.astra.shaders.install(profile.id, mod.id)
-      : await window.astra.mods.install(profile.id, mod.id);
+    const files = await contentApi().install(profile.id, mod.id);
     button.classList.add('done');
     button.textContent = 'Installed';
     const extra = files.length > 1 ? ` (+${files.length - 1} dependency)` : '';
@@ -1289,15 +1529,13 @@ async function renderInstalled() {
   const profile = currentProfile();
   const list = $('#installed-list');
   list.innerHTML = '';
-  // A vanilla profile can still hold shader packs; only mods need a loader.
-  if (!profile || (profile.loader === 'vanilla' && !isShaders())) {
+  // A vanilla profile can still hold shaders and resource packs; only mods need a loader.
+  if (!profile || (profile.loader === 'vanilla' && isLoaderBound())) {
     state.mods.installed = [];
     return;
   }
 
-  const files = isShaders()
-    ? await window.astra.shaders.installed(profile.id)
-    : await window.astra.mods.installed(profile.id);
+  const files = await contentApi().installed(profile.id);
   state.mods.installed = files;
 
   if (!files.length) {
@@ -2270,6 +2508,43 @@ $('#btn-add-server').addEventListener('click', async () => {
 
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
+  {
+    version: '1.3.0',
+    date: '2026-08-31',
+    title: 'It fixes itself',
+    items: [
+      'When Minecraft crashes, Astra reads the log and names the mod that did it.',
+      'One button applies the fix: turn the mod off, or download what was missing.',
+      'A mod built for the wrong version is swapped for the build that matches.',
+      'Missing dependencies like Fabric API are fetched automatically.',
+      'Mods are checked before you play, so a jar that cannot load is caught early.',
+      'Out of memory and Java version problems are explained and fixed too.'
+    ]
+  },
+  {
+    version: '1.2.0',
+    date: '2026-08-31',
+    title: 'Horror tab',
+    items: [
+      'New Horror category in the Mods tab - hundreds of real scary mods in one place.',
+      'From The Fog, The Man From The Fog, Cave Dweller, Backrooms, Sculk Horde and more.',
+      'Filtered by hand, so a mod that merely mentions monsters does not show up.',
+      'Everything installs from Modrinth, which moderates and scans what it hosts.',
+      'The build now refuses to package JavaScript that does not parse.'
+    ]
+  },
+  {
+    version: '1.1.0',
+    date: '2026-08-31',
+    title: 'Capes in game',
+    items: [
+      'Your wardrobe cape now renders on your player in Minecraft, animated.',
+      'Every cape is baked into a 16 frame loop, so it moves the same in game as in the store.',
+      'Astra menus are translucent - the game shows through instead of being boxed out.',
+      'New buttons on the Astra main menu, and a switch to put the vanilla menu back.',
+      'The in-game menu (Right Shift) has the same switch, so it is never a one-way door.'
+    ]
+  },
   {
     version: '1.0.0',
     date: '2026-08-31',

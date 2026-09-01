@@ -1,11 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "1.3.0",
   "electronMajor": 31,
-  "notes": "Astra Client 1.0.0 - first release",
-  "released": "2026-08-31T19:14:15.746Z",
+  "notes": "Astra Client 1.3.0",
+  "released": "2026-09-01T05:46:12.808Z",
   "downloads": {
-    "setup": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.0.0/AstraClientSetup-v1.0.0.exe",
-    "zip": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.0.0/AstraClient-v1.0.0-win64.zip"
+    "setup": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.0/AstraClientSetup-v1.3.0.exe",
+    "zip": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.0/AstraClient-v1.3.0-win64.zip"
   },
   "files": [
     {
@@ -82,8 +82,8 @@
     },
     {
       "path": "assets/clientmod/astra-client-1.21.11-fabric.jar",
-      "sha1": "cbcf82e93bd6d331e6eae880beac121e214dd863",
-      "size": 37710,
+      "sha1": "867b2316a21dcdd465c7614d230c4c0a42829c94",
+      "size": 1422534,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/clientmod/astra-client-1.21.11-fabric.jar"
     },
     {
@@ -99,6 +99,30 @@
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/icon.png"
     },
     {
+      "path": "assets/seasonal/christmas.mp3",
+      "sha1": "1efb75d1b11335cde203409bf37780ab7329694c",
+      "size": 2520816,
+      "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/seasonal/christmas.mp3"
+    },
+    {
+      "path": "assets/seasonal/christmas.mp4",
+      "sha1": "059ba6d432f0de0a5066e627c24a906d5268a4ae",
+      "size": 1158472,
+      "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/seasonal/christmas.mp4"
+    },
+    {
+      "path": "assets/seasonal/halloween.mp3",
+      "sha1": "947f9703e85bd30a0e6e4344b9e64c672543469f",
+      "size": 2520816,
+      "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/seasonal/halloween.mp3"
+    },
+    {
+      "path": "assets/seasonal/winter.mp4",
+      "sha1": "e6efb37e4b774dd3bf529e331211bbeec9c24417",
+      "size": 2798904,
+      "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/assets/seasonal/winter.mp4"
+    },
+    {
       "path": "assets/theme.mp3",
       "sha1": "5534e3e46cd44a389eae8da5c9d9d374cc9ce465",
       "size": 2271658,
@@ -106,38 +130,38 @@
     },
     {
       "path": "main.js",
-      "sha1": "07cc6c4e8940f6979b047a5f8eeb4f45bd93b927",
-      "size": 12282,
+      "sha1": "d2804c28fad9bd0378752d1e888036c7127cfc03",
+      "size": 13825,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/main.js"
     },
     {
       "path": "package.json",
-      "sha1": "d0ffb5ced23358859bb036c5af230f9179926199",
-      "size": 785,
+      "sha1": "91dfdcad171da8fecd37a9345885e9b8066a580e",
+      "size": 787,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/package.json"
     },
     {
       "path": "preload.js",
-      "sha1": "968028685cc77464574a796aef9382229715c50d",
-      "size": 5384,
+      "sha1": "d167d7ed3016bf6074ce16d9b65da8a1f8c1b8bd",
+      "size": 6030,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/preload.js"
     },
     {
       "path": "renderer/css/app.css",
-      "sha1": "81180e203ac83132e83b03c3cb7929f0b506d378",
-      "size": 49353,
+      "sha1": "06623a695cd3ed92f142bc9cf791ecc1a8a10066",
+      "size": 52682,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/css/app.css"
     },
     {
       "path": "renderer/index.html",
-      "sha1": "899a6d4e61f85eb7820bc76e1c5f933ea2b6cbe9",
-      "size": 24266,
+      "sha1": "bb3b9e04545428a5dae0e3ec8e134d40cd79601f",
+      "size": 25251,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/index.html"
     },
     {
       "path": "renderer/js/app.js",
-      "sha1": "78f9dc49bae148d52ce95c5c6d51b8478984bc1e",
-      "size": 87443,
+      "sha1": "5e136953b95144352cd11f946c49202522ce7191",
+      "size": 97558,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/js/app.js"
     },
     {
@@ -177,6 +201,12 @@
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/src/discord.js"
     },
     {
+      "path": "src/doctor.js",
+      "sha1": "5fc5524a18ed5065fd2756360c7ab3fae2f4c7e8",
+      "size": 23233,
+      "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/src/doctor.js"
+    },
+    {
       "path": "src/installer.js",
       "sha1": "85e5e6fde1ca56e7c1d9f00f243b793470afcf4e",
       "size": 20959,
@@ -196,8 +226,8 @@
     },
     {
       "path": "src/mods.js",
-      "sha1": "558cadf50198711067eb8361323d6dcec0c7ad17",
-      "size": 6883,
+      "sha1": "cb9836c64dcdf23b8f25842874547710097fc731",
+      "size": 12272,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/src/mods.js"
     },
     {
@@ -220,8 +250,8 @@
     },
     {
       "path": "src/store.js",
-      "sha1": "12c353ae89088ab847a32880f525e480f34424e3",
-      "size": 3694,
+      "sha1": "c5f1cf9c57c209246875bd6fdf5ca33e445140eb",
+      "size": 3714,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/src/store.js"
     },
     {

@@ -1171,13 +1171,76 @@ input[type=range]::-webkit-slider-thumb {
 
 /* ---- seasonal tints, toggled from settings ---- */
 
-body.season-halloween {
-  --moon: #F0A044; --moon-bright: #FFD9A8; --moon-deep: #C4632A;
-  --glow: rgba(240, 160, 68, .35);
+/* A season repaints the accent, warms the panels and re-tints the scrim. Changing only
+   the accent left it barely noticeable, which is why it read as broken. */
+
+.season-halloween {
+  --moon: #F0A044;
+  --moon-bright: #FFD9A8;
+  --moon-deep: #C4632A;
+  --glow: rgba(240, 160, 68, .38);
+  --panel-3: #241A16;
+  --line: #33241C;
+  --line-soft: #2A1E18;
 }
-body.season-christmas {
-  --moon: #7FD8A0; --moon-bright: #DFF7E6; --moon-deep: #3E9E68;
-  --glow: rgba(127, 216, 160, .35);
+.season-halloween .bg-scrim {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(28,14,6,.28) 0%, rgba(16,9,6,.84) 55%, rgba(12,7,5,.96) 100%),
+    linear-gradient(180deg, rgba(40,18,6,.42), rgba(12,7,5,.92));
+}
+.season-halloween .splash {
+  background: radial-gradient(70% 70% at 50% 45%, #3A1C08 0%, #1A0D06 45%, #0A0503 100%);
+}
+.season-halloween .panel,
+.season-halloween .hero,
+.season-halloween .mods-bar {
+  background: linear-gradient(180deg, rgba(40,26,18,.72), rgba(20,13,9,.80));
+}
+
+.season-christmas {
+  --moon: #7FD8A0;
+  --moon-bright: #DFF7E6;
+  --moon-deep: #3E9E68;
+  --glow: rgba(127, 216, 160, .38);
+  --panel-3: #14231C;
+  --line: #1F3229;
+  --line-soft: #1A2A23;
+}
+.season-christmas .bg-scrim {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(8,22,16,.26) 0%, rgba(6,16,12,.82) 55%, rgba(5,12,9,.96) 100%),
+    linear-gradient(180deg, rgba(10,30,20,.42), rgba(5,12,9,.92));
+}
+.season-christmas .splash {
+  background: radial-gradient(70% 70% at 50% 45%, #0E3324 0%, #071A13 45%, #030A07 100%);
+}
+.season-christmas .panel,
+.season-christmas .hero,
+.season-christmas .mods-bar {
+  background: linear-gradient(180deg, rgba(20,40,31,.72), rgba(10,20,16,.80));
+}
+
+/* Snow, but only while the festive theme is on. */
+.season-christmas::after {
+  content: '';
+  position: fixed;
+  inset: -60px 0 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 12% 10%, rgba(255,255,255,.8), transparent),
+    radial-gradient(2px 2px at 38% 26%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1.6px 1.6px at 63% 14%, rgba(255,255,255,.7), transparent),
+    radial-gradient(2px 2px at 81% 32%, rgba(255,255,255,.55), transparent),
+    radial-gradient(1.6px 1.6px at 27% 48%, rgba(255,255,255,.6), transparent),
+    radial-gradient(2px 2px at 54% 62%, rgba(255,255,255,.5), transparent);
+  background-size: 100% 400px;
+  animation: snowDrift 14s linear infinite;
+  opacity: .55;
+}
+@keyframes snowDrift {
+  from { transform: translateY(-400px); }
+  to { transform: translateY(0); }
 }
 
 /* ================================================================ player model
@@ -1320,3 +1383,38 @@ body.season-christmas {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* ------------------------------------------------------------------ doctor
+ *
+ * Shown when the game exits badly. It sits above the raw output because the
+ * plain-English cause is what people need; the log is there to confirm it.
+ */
+
+.doctor-panel { margin-bottom: 14px; }
+
+.doctor-list { display: flex; flex-direction: column; gap: 10px; }
+
+.doctor-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid #8f7bd6;
+}
+
+.doctor-item.error { border-left-color: #e0555f; }
+.doctor-item.warn { border-left-color: #e0a340; }
+
+.doctor-text { flex: 1; min-width: 0; }
+
+.doctor-item h4 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+
+.doctor-item p { margin: 0; font-size: 12.5px; line-height: 1.5; opacity: 0.78; }
+
+.doctor-mod {
+  display: inline-block; margin-top: 6px; padding: 2px 8px;
+  border-radius: 999px; font-size: 11px; letter-spacing: 0.3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.doctor-item button { flex: 0 0 auto; align-self: center; }

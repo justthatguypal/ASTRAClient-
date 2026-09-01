@@ -18,6 +18,7 @@ const discord = require('./src/discord');
 const cosmetics = require('./src/cosmetics');
 const performance = require('./src/performance');
 const clientmod = require('./src/clientmod');
+const doctor = require('./src/doctor');
 
 let mainWindow = null;
 let running = null;
@@ -257,6 +258,26 @@ function profileById(id) {
   return store.get('profiles').find((p) => p.id === id) || null;
 }
 
+/* ------------------------------------------------------------------ doctor */
+
+ipcMain.handle('doctor:diagnose', (_e, profileId, log) =>
+  doctor.diagnose(profileById(profileId), log));
+
+ipcMain.handle('doctor:check', (_e, profileId) =>
+  doctor.checkProfile(profileById(profileId)));
+
+ipcMain.handle('doctor:fix', async (_e, profileId, fix) => {
+  const profile = profileById(profileId);
+  const result = await doctor.applyFix(profile, fix, store.load(), (progress) => {
+    if (mainWindow) mainWindow.webContents.send('mods:progress', progress);
+  });
+
+  // A memory fix is a settings change; the doctor reports it rather than
+  // reaching into the store itself, so every write still goes through here.
+  if (result.settings) store.patch(result.settings);
+  return result;
+});
+
 ipcMain.handle('mods:search', (_e, options) => mods.search(options));
 
 ipcMain.handle('mods:install', async (_e, profileId, projectId) => {
@@ -283,6 +304,24 @@ ipcMain.handle('shaders:install', async (_e, profileId, projectId) => {
       mainWindow.webContents.send('mods:progress', { projectId, ...progress });
     }
   }, 'shader');
+});
+
+ipcMain.handle('packs:search', (_e, options) =>
+  mods.search({ ...options, projectType: 'resourcepack', loader: null }));
+
+ipcMain.handle('packs:install', async (_e, profileId, projectId) => {
+  const profile = profileById(profileId);
+  return mods.install(profile, projectId, (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('mods:progress', { projectId, ...progress });
+    }
+  }, 'resourcepack');
+});
+
+ipcMain.handle('packs:folder', (_e, profileId) => {
+  const dir = mods.resourcePacksDirFor(profileById(profileId));
+  fs.mkdirSync(dir, { recursive: true });
+  return shell.openPath(dir);
 });
 
 ipcMain.handle('shaders:folder', (_e, profileId) => {
@@ -346,5 +385,7 @@ ipcMain.handle('clientmod:check', (_e, profileId) =>
 
 ipcMain.handle('perf:presets', () => performance.presets());
 ipcMain.handle('perf:ping', (_e, address) => performance.ping(address));
-ipcMain.handle('mods:remove', (_e, profileId, filename) => mods.remove(profileById(profileId), filename));
-ipcMain.handle('mods:toggle', (_e, profileId, filename) => mods.toggle(profileById(profileId), filename));
+ipcMain.handle('mods:remove', (_e, profileId, filename, kind) =>
+  mods.remove(profileById(profileId), filename, kind));
+ipcMain.handle('mods:toggle', (_e, profileId, filename, kind) =>
+  mods.toggle(profileById(profileId), filename, kind));

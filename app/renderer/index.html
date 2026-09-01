@@ -116,6 +116,14 @@
         <div class="progress-detail" id="progress-detail"></div>
       </div>
 
+      <div class="panel doctor-panel" id="doctor-panel" hidden>
+        <div class="panel-head">
+          <h3 id="doctor-title">What went wrong</h3>
+          <button class="ghost-btn small" id="btn-doctor-close">Dismiss</button>
+        </div>
+        <div class="doctor-list" id="doctor-list"></div>
+      </div>
+
       <div class="panel console-panel" id="console-panel" hidden>
         <div class="panel-head">
           <h3>Game output</h3>
@@ -190,6 +198,7 @@
       <div class="type-switch" id="content-type">
         <button class="type-btn active" data-type="mod">Mods</button>
         <button class="type-btn" data-type="shader">Shaders</button>
+        <button class="type-btn" data-type="resourcepack">Resource Packs</button>
       </div>
 
       <div class="mods-bar">
@@ -402,11 +411,22 @@
         </div>
         <div class="bg-picker" id="bg-picker"></div>
         <div class="setting">
-          <div><strong>Seasonal themes</strong><span class="hint">Halloween in October, winter in December</span></div>
-          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-seasonal" /><span></span></label></div>
+          <div><strong>Seasonal theme</strong><span class="hint" id="seasonal-hint">Halloween in October, festive in December</span></div>
+          <div class="setting-control">
+            <select class="select" id="set-season">
+              <option value="auto">Automatic</option>
+              <option value="off">Off</option>
+              <option value="halloween">Halloween</option>
+              <option value="christmas">Festive</option>
+            </select>
+          </div>
         </div>
         <div class="setting">
-          <div><strong>Featured seasonal profile</strong><span class="hint" id="seasonal-hint">Offers the matching Minecraft event version</span></div>
+          <div><strong>Seasonal music &amp; background</strong><span class="hint">Swaps the theme track and backdrop while a season is on</span></div>
+          <div class="setting-control"><label class="switch"><input type="checkbox" id="set-season-media" /><span></span></label></div>
+        </div>
+        <div class="setting">
+          <div><strong>Featured seasonal profile</strong><span class="hint" id="seasonal-profile-hint">A ready-made profile for the event</span></div>
           <div class="setting-control"><button class="ghost-btn" id="btn-seasonal-profile">Create it</button></div>
         </div>
       </div>
