@@ -1418,3 +1418,25 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 .doctor-item button { flex: 0 0 auto; align-self: center; }
+
+
+/* Links inside a patch note. Buttons rather than anchors, because they open the
+   system browser instead of navigating the launcher. */
+
+.note-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+.note-link {
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  font-size: 12px; font-family: inherit;
+  color: #cfd8f5;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.note-link:hover {
+  background: rgba(143, 123, 214, 0.28);
+  border-color: rgba(143, 123, 214, 0.55);
+  color: #fff;
+  transform: translateY(-1px);
+}

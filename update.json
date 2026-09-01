@@ -2,7 +2,7 @@
   "version": "1.3.0",
   "electronMajor": 31,
   "notes": "Astra Client 1.3.0",
-  "released": "2026-09-01T05:55:13.816Z",
+  "released": "2026-09-01T05:58:18.113Z",
   "downloads": {
     "setup": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.0/AstraClientSetup-v1.3.0.exe",
     "zip": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.0/AstraClient-v1.3.0-win64.zip"
@@ -148,8 +148,8 @@
     },
     {
       "path": "renderer/css/app.css",
-      "sha1": "06623a695cd3ed92f142bc9cf791ecc1a8a10066",
-      "size": 52682,
+      "sha1": "b85d1ca3a882d9f779355a4e28a7c826654e2aa8",
+      "size": 53373,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/css/app.css"
     },
     {
@@ -160,8 +160,8 @@
     },
     {
       "path": "renderer/js/app.js",
-      "sha1": "5e136953b95144352cd11f946c49202522ce7191",
-      "size": 97558,
+      "sha1": "540c816a80f0c17f33af07730b5e1b7b2a08a38e",
+      "size": 98680,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/js/app.js"
     },
     {

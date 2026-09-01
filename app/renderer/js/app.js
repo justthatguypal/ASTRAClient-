@@ -2512,7 +2512,15 @@ const ASTRA_NOTES = [
     version: '1.3.0',
     date: '2026-08-31',
     title: 'It fixes itself',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
     items: [
+      'Website is live: justthatguypal.github.io/ASTRAClient-',
+      'Client mod builds: Minecraft 1.21.11 on Fabric and Quilt, installed for you when you play.',
+      'Client mod for 1.21.11 Forge, NeoForge and for 26.2 is not built yet.',
       'When Minecraft crashes, Astra reads the log and names the mod that did it.',
       'One button applies the fix: turn the mod off, or download what was missing.',
       'A mod built for the wrong version is swapped for the build that matches.',
@@ -2593,6 +2601,22 @@ async function renderNotes() {
       ul.appendChild(li);
     }
     body.appendChild(ul);
+
+    // Links open in the actual browser. An <a href> would navigate the launcher
+    // itself, which has no way back - there is no address bar and no back button.
+    if (note.links && note.links.length) {
+      const row = document.createElement('div');
+      row.className = 'note-links';
+      for (const link of note.links) {
+        const a = document.createElement('button');
+        a.className = 'note-link';
+        a.textContent = link.label;
+        a.title = link.url;
+        a.addEventListener('click', () => window.astra.shell.open(link.url));
+        row.appendChild(a);
+      }
+      body.appendChild(row);
+    }
 
     card.append(head, body);
     list.appendChild(card);
