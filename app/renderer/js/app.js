@@ -449,6 +449,34 @@ $('#btn-trailer-close').addEventListener('click', hideTrailer);
 $('#btn-trailer-x').addEventListener('click', hideTrailer);
 $('#btn-watch-trailer').addEventListener('click', showTrailer);
 
+/*
+ * Installs the performance mods into the selected profile.
+ *
+ * Reports what was skipped as well as what went in: not every mod has a build for
+ * every Minecraft version, and claiming to have installed nine when it installed
+ * six would be a lie the player finds out about later.
+ */
+$('#btn-perf-mods').addEventListener('click', async () => {
+  if (!state.selected) return toast('Pick a profile first', 'error');
+
+  const button = $('#btn-perf-mods');
+  button.disabled = true;
+  button.innerHTML = '<span class="spinner"></span>';
+  try {
+    const result = await window.astra.perf.installMods(state.selected);
+    toast(`Installed ${result.installed.length} performance mods`, 'ok');
+    if (result.unavailable.length) {
+      toast(`No build for this version: ${result.unavailable.join(', ')}`);
+    }
+    button.textContent = 'Installed';
+  } catch (err) {
+    toast(err.message, 'error');
+    button.textContent = 'Install';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 // When it finishes, say so rather than leaving a black frame and no hint that
 // the way out is the button below it.
 $('#trailer-video').addEventListener('ended', () => {
@@ -1480,7 +1508,7 @@ function compactNumber(value) {
 let searchToken = 0;
 
 /*
- * The three community mods of the week.
+ * The three community modpacks of the week.
  *
  * Only for mods - shaders and resource packs have their own tabs and their own
  * character, and a "featured mod" sitting above a shader list makes no sense.
@@ -1496,8 +1524,9 @@ async function renderFeatured() {
 
   const profile = currentProfile();
   try {
-    const picks = await window.astra.mods.featured({
-      loader: profile && isLoaderBound() ? profile.loader : undefined,
+    // Modpacks, not loose mods: a pack is a whole setup somebody put together and
+    // tested, which is a far better thing to feature than one more utility jar.
+    const picks = await window.astra.mods.packsFeatured({
       gameVersion: profile ? profile.mcVersion : undefined
     });
 
@@ -1533,13 +1562,27 @@ async function renderFeatured() {
       text.append(title, author, desc);
       card.appendChild(text);
 
-      // Clicking one searches for it, so it lands in the normal grid with the
-      // normal install button rather than needing a second install path.
-      card.addEventListener('click', () => {
-        $('#mod-search').value = mod.title;
-        state.mods.query = mod.title;
-        runModSearch(true);
+      const install = document.createElement('button');
+      install.className = 'primary-btn small featured-install';
+      install.textContent = 'Install';
+      install.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        install.disabled = true;
+        install.innerHTML = '<span class="spinner"></span>';
+        try {
+          // A pack becomes its own profile - it pins exact mod versions, and
+          // merging that into an existing mods folder is how you get duplicates.
+          const created = await window.astra.mods.installPack(mod.id);
+          toast(`Installed ${created.name}`, 'ok');
+          await refreshProfiles();
+          install.textContent = 'Installed';
+        } catch (err) {
+          toast(err.message, 'error');
+          install.disabled = false;
+          install.textContent = 'Install';
+        }
       });
+      text.appendChild(install);
 
       row.appendChild(card);
     }
@@ -2672,6 +2715,23 @@ $('#btn-add-server').addEventListener('click', async () => {
 
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
+  {
+    version: '1.5.0',
+    date: '2026-09-01',
+    title: 'Modpacks and more frames',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Featured is now three community modpacks a week, and one click installs a whole setup.',
+      'Modpacks get their own profile, with the right Minecraft version and loader picked for you.',
+      'Install performance mods in one click: Sodium, Lithium, FerriteCore and friends.',
+      'New Turbo preset - harder than Max FPS, with clouds and screen effects off.',
+      'More of Minecraft options tuned by the presets than before.'
+    ]
+  },
   {
     version: '1.4.2',
     date: '2026-09-01',

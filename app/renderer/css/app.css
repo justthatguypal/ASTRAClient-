@@ -1550,3 +1550,6 @@ input[type=range]::-webkit-slider-thumb {
 .trailer-x:hover {
   background: #d94a63; border-color: #d94a63; transform: scale(1.06);
 }
+
+
+.featured-install { margin-top: 10px; width: 100%; }

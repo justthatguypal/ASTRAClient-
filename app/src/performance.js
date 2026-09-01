@@ -53,6 +53,27 @@ const PRESETS = {
       particles: 0, entityShadows: true, enableVsync: true, biomeBlendRadius: 4,
       ao: true, mipmapLevels: 4, entityDistanceScaling: 1.0 }
   },
+  turbo: {
+    label: 'Turbo',
+    jvm: '-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=100'
+      + ' -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch'
+      + ' -XX:G1NewSizePercent=40 -XX:G1MaxNewSizePercent=50 -XX:G1HeapRegionSize=16M'
+      + ' -XX:G1ReservePercent=15 -XX:InitiatingHeapOccupancyPercent=20'
+      + ' -XX:+PerfDisableSharedMem -XX:MaxTenuringThreshold=1 -XX:SurvivorRatio=32'
+      // Bigger JIT code cache and tiered compilation settled early: Minecraft is a
+      // long-running process, so paying compile cost up front beats re-JITing later.
+      + ' -XX:+SegmentedCodeCache -XX:ReservedCodeCacheSize=512M'
+      + ' -XX:NonNMethodCodeHeapSize=12M -XX:ProfiledCodeHeapSize=256M'
+      + ' -XX:NonProfiledCodeHeapSize=244M -XX:+UseFastUnorderedTimeStamps'
+      + ' -XX:+UseVectorCmov -XX:+UseCriticalJavaThreadPriority'
+      + ' -Dsun.rmi.dgc.server.gcInterval=2147483646 -Djava.awt.headless=false',
+    options: { renderDistance: 5, simulationDistance: 5, maxFps: 260, graphicsMode: 0,
+      particles: 2, entityShadows: false, enableVsync: false, biomeBlendRadius: 0,
+      ao: false, mipmapLevels: 0, entityDistanceScaling: 0.5, fancyGraphics: false,
+      renderClouds: 'false', screenEffectScale: 0.0, fovEffectScale: 0.0,
+      darknessEffectScale: 0.0, glintSpeed: 0.0, glintStrength: 0.0,
+      bobView: false, showSubtitles: false }
+  },
   potato: {
     label: 'Potato PC',
     jvm: '-XX:+UseSerialGC -XX:MaxGCPauseMillis=200 -XX:+PerfDisableSharedMem',
@@ -75,8 +96,81 @@ const OPTION_KEYS = {
   ao: 'ao',
   mipmapLevels: 'mipmapLevels',
   entityDistanceScaling: 'entityDistanceScaling',
-  fancyGraphics: 'fancyGraphics'
+  fancyGraphics: 'fancyGraphics',
+  // Cheap wins the presets could not reach before: clouds are a full transparent
+  // pass, and the screen-effect scales drive per-frame post-processing.
+  renderClouds: 'renderClouds',
+  screenEffectScale: 'screenEffectScale',
+  fovEffectScale: 'fovEffectScale',
+  darknessEffectScale: 'darknessEffectScale',
+  glintSpeed: 'glintSpeed',
+  glintStrength: 'glintStrength',
+  bobView: 'bobView',
+  showSubtitles: 'showSubtitles',
+  prioritizeChunkUpdates: 'prioritizeChunkUpdates'
 };
+
+/*
+ * The mods that actually move the needle.
+ *
+ * Every JVM flag in this file put together is worth a few frames; Sodium alone is
+ * routinely worth double. So the strongest thing the launcher can do for framerate
+ * is install the right rendering and memory mods for the profile - which it already
+ * knows how to do.
+ *
+ * Listed per loader because the Fabric originals have different Forge ports, and
+ * skipped silently when a build for that exact version does not exist yet.
+ */
+const PERFORMANCE_MODS = {
+  fabric: ['sodium', 'lithium', 'ferrite-core', 'immediatelyfast', 'entityculling',
+    'moreculling', 'dynamic-fps', 'modernfix', 'c2me-fabric'],
+  quilt: ['sodium', 'lithium', 'ferrite-core', 'immediatelyfast', 'entityculling',
+    'moreculling', 'dynamic-fps', 'modernfix'],
+  forge: ['embeddium', 'canary', 'ferrite-core', 'modernfix', 'entityculling',
+    'immediatelyfast', 'moreculling', 'dynamic-fps'],
+  neoforge: ['embeddium', 'canary', 'ferrite-core', 'modernfix', 'entityculling',
+    'immediatelyfast', 'dynamic-fps']
+};
+
+/**
+ * Installs every performance mod that has a build for this profile.
+ * Returns what went in and what had nothing available, so the UI can be honest
+ * rather than claiming it installed things it did not.
+ */
+async function installMods(profile, onProgress = () => {}) {
+  const mods = require('./mods');
+  if (!profile) throw new Error('Pick a profile first.');
+  if (profile.loader === 'vanilla') {
+    throw new Error('This profile is vanilla. Performance mods need Fabric, Forge, Quilt or NeoForge.');
+  }
+
+  const wanted = PERFORMANCE_MODS[profile.loader] || [];
+  const installed = [];
+  const unavailable = [];
+
+  for (let i = 0; i < wanted.length; i++) {
+    const slug = wanted[i];
+    onProgress({ title: `Looking for ${slug}`, done: i, total: wanted.length });
+
+    try {
+      const found = await mods.search({
+        query: slug, loader: profile.loader, gameVersion: profile.mcVersion, limit: 5
+      });
+      const project = found.hits.find((h) => h.slug.toLowerCase() === slug);
+      if (!project) { unavailable.push(slug); continue; }
+
+      onProgress({ title: `Installing ${project.title}`, done: i, total: wanted.length });
+      await mods.install(profile, project.id, () => {}, 'mod');
+      installed.push(project.title);
+    } catch (_) {
+      // One mod refusing to install is not a reason to abandon the rest.
+      unavailable.push(slug);
+    }
+  }
+
+  onProgress({ title: 'Done', done: wanted.length, total: wanted.length });
+  return { installed, unavailable };
+}
 
 function presets() {
   return Object.entries(PRESETS).map(([id, preset]) => ({
@@ -179,4 +273,5 @@ function ping(address, attempts = 3) {
   })();
 }
 
-module.exports = { presets, jvmFor, applyOptions, ping, priorityValue, PRESETS };
+module.exports = {
+  installMods, presets, jvmFor, applyOptions, ping, priorityValue, PRESETS };

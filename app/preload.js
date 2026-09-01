@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('astra', {
   mods: {
     search: (options) => ipcRenderer.invoke('mods:search', options),
     featured: (options) => ipcRenderer.invoke('mods:featured', options),
+    packsFeatured: (options) => ipcRenderer.invoke('modpacks:featured', options),
+    installPack: (projectId) => ipcRenderer.invoke('modpacks:install', projectId),
     install: (profileId, projectId) => ipcRenderer.invoke('mods:install', profileId, projectId),
     installed: (profileId) => ipcRenderer.invoke('mods:installed', profileId),
     remove: (profileId, filename, kind) => ipcRenderer.invoke('mods:remove', profileId, filename, kind),
@@ -129,7 +131,8 @@ contextBridge.exposeInMainWorld('astra', {
   },
   perf: {
     presets: () => ipcRenderer.invoke('perf:presets'),
-    ping: (address) => ipcRenderer.invoke('perf:ping', address)
+    ping: (address) => ipcRenderer.invoke('perf:ping', address),
+    installMods: (profileId) => ipcRenderer.invoke('perf:installMods', profileId)
   },
   paths: {
     root: () => ipcRenderer.invoke('paths:root')

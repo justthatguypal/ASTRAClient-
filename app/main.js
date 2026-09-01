@@ -19,6 +19,7 @@ const cosmetics = require('./src/cosmetics');
 const performance = require('./src/performance');
 const clientmod = require('./src/clientmod');
 const doctor = require('./src/doctor');
+const modpacks = require('./src/modpacks');
 
 let mainWindow = null;
 let running = null;
@@ -321,6 +322,18 @@ ipcMain.handle('doctor:fix', async (_e, profileId, fix) => {
 ipcMain.handle('mods:search', (_e, options) => mods.search(options));
 ipcMain.handle('mods:featured', (_e, options) => mods.featured(options));
 
+ipcMain.handle('modpacks:featured', (_e, options) => modpacks.featured(options));
+
+ipcMain.handle('modpacks:install', async (_e, projectId) => {
+  const profile = await modpacks.install(projectId, (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('mods:progress', progress);
+    }
+  });
+  store.set('lastProfile', profile.id);
+  return profile;
+});
+
 ipcMain.handle('mods:install', async (_e, profileId, projectId) => {
   const profile = profileById(profileId);
   const result = await mods.install(profile, projectId, (progress) => {
@@ -444,6 +457,13 @@ ipcMain.handle('clientmod:check', (_e, profileId) =>
   clientmod.compatibility(profileById(profileId)));
 
 ipcMain.handle('perf:presets', () => performance.presets());
+
+ipcMain.handle('perf:installMods', (_e, profileId) =>
+  performance.installMods(profileById(profileId), (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('mods:progress', progress);
+    }
+  }));
 ipcMain.handle('perf:ping', (_e, address) => performance.ping(address));
 ipcMain.handle('mods:remove', (_e, profileId, filename, kind) =>
   mods.remove(profileById(profileId), filename, kind));
