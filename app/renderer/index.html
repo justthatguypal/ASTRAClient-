@@ -54,6 +54,9 @@
     <button class="rail-btn" data-view="versions" title="Versions">
       <svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
     </button>
+    <button class="rail-btn" data-view="profiles" title="Profiles">
+      <svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="6" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="17" height="6" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="7" cy="7.5" r="1.1" fill="currentColor"/><circle cx="7" cy="16.5" r="1.1" fill="currentColor"/></svg>
+    </button>
     <button class="rail-btn" data-view="mods" title="Mods">
       <svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M17 13.5v7M13.5 17h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
     </button>
@@ -183,7 +186,15 @@
         </section>
       </div>
 
-      <div class="view-head"><h3>Your profiles</h3></div>
+    </section>
+
+    <!-- PROFILES -->
+    <section class="view" data-view="profiles">
+      <div class="view-head">
+        <h2>Profiles</h2>
+        <span class="hint-inline" id="profiles-count"></span>
+        <button class="ghost-btn small" id="btn-new-profile">New profile</button>
+      </div>
       <div class="profile-grid" id="profile-grid"></div>
     </section>
 

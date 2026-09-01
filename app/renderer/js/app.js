@@ -75,8 +75,8 @@ async function runSplash(steps) {
 
 // ---------------------------------------------------------------- navigation
 
-const VIEW_ORDER = ['home', 'versions', 'mods', 'shaders', 'wardrobe', 'shop',
-  'friends', 'servers', 'notes', 'settings'];
+const VIEW_ORDER = ['home', 'versions', 'profiles', 'mods', 'shaders', 'wardrobe',
+  'shop', 'friends', 'servers', 'notes', 'settings'];
 
 /**
  * Staggered entry for a list of freshly built elements.
@@ -638,6 +638,14 @@ $('#show-snapshots').addEventListener('change', async (e) => {
   renderVersionList();
 });
 
+const newProfileBtn = $('#btn-new-profile');
+if (newProfileBtn) {
+  newProfileBtn.addEventListener('click', () => {
+    showView('versions');
+    toast('Pick a version and loader, then press Create');
+  });
+}
+
 $('#btn-create').addEventListener('click', async () => {
   const profile = {
     mcVersion: $('#pick-version').value,
@@ -654,7 +662,9 @@ $('#btn-create').addEventListener('click', async () => {
   $('#pick-name').value = '';
   await refreshProfiles(saved.id);
   toast(`Created ${saved.name}`, 'ok');
-  showView('home');
+  // Land on Profiles now that they live on their own page - seeing the thing you
+  // just made beats being dropped back on Home wondering where it went.
+  showView('profiles');
 });
 
 // ---------------------------------------------------------------- profiles
@@ -673,6 +683,12 @@ async function refreshProfiles(selectId) {
 function renderProfiles() {
   const grid = $('#profile-grid');
   grid.innerHTML = '';
+
+  const count = $('#profiles-count');
+  if (count) {
+    count.textContent = state.profiles.length === 1
+      ? '1 profile' : `${state.profiles.length} profiles`;
+  }
 
   if (!state.profiles.length) {
     const empty = document.createElement('div');
@@ -2762,6 +2778,20 @@ $('#btn-add-server').addEventListener('click', async () => {
 
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
+  {
+    version: '1.7.0',
+    date: '2026-09-01',
+    title: 'Profiles tab',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Profiles have their own tab now instead of sitting under Versions.',
+      'Creating a profile takes you straight to it.'
+    ]
+  },
   {
     version: '1.6.1',
     date: '2026-09-01',
