@@ -2763,6 +2763,19 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.6.1',
+    date: '2026-09-01',
+    title: 'Updates work again',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Fixed "checksum mismatch" stopping every update - files were being altered on publish.'
+    ]
+  },
+  {
     version: '1.6.0',
     date: '2026-09-01',
     title: 'Updates itself, and a Modpacks tab',
