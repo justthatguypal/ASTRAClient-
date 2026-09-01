@@ -2673,6 +2673,20 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.4.2',
+    date: '2026-09-01',
+    title: 'Sign in fix',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Fixed the Microsoft sign in failing to renew - it was missing a required parameter.',
+      'Sign in problems now say what to do instead of showing raw Microsoft error data.'
+    ]
+  },
+  {
     version: '1.4.1',
     date: '2026-09-01',
     title: 'The trailer closes',

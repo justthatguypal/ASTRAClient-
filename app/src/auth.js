@@ -86,6 +86,30 @@ function getAuthCode(parent) {
   });
 }
 
+/*
+ * Microsoft answers failures with an OAuth error object. Showing that raw put a
+ * wall of JSON and a correlation id in a toast, which tells a player nothing about
+ * what to do - so the known cases are translated and the rest is kept short.
+ */
+function describeOAuthError(status, text) {
+  let body = {};
+  try { body = JSON.parse(text); } catch (_) { /* not JSON; fall through */ }
+
+  const code = body.error || '';
+  if (code === 'invalid_grant') {
+    return 'Your Microsoft sign in has expired. Sign in again.';
+  }
+  if (code === 'invalid_scope') {
+    return 'Microsoft rejected the sign in request. Sign out and sign in again.';
+  }
+  if (code === 'invalid_client') {
+    return 'Microsoft rejected the app id this launcher uses.';
+  }
+
+  const detail = body.error_description || text || '';
+  return `Microsoft sign in failed (${status}). ${String(detail).slice(0, 140)}`;
+}
+
 async function postForm(url, body) {
   const res = await fetch(url, {
     method: 'POST',
@@ -93,7 +117,12 @@ async function postForm(url, body) {
     body: new URLSearchParams(body).toString()
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`${url} -> ${res.status} ${text.slice(0, 300)}`);
+  if (!res.ok) {
+    const error = new Error(describeOAuthError(res.status, text));
+    // Flagged so callers can clear a dead session rather than retrying forever.
+    error.needsSignIn = /invalid_grant|invalid_scope/.test(text);
+    throw error;
+  }
   return JSON.parse(text);
 }
 
@@ -116,16 +145,27 @@ function exchangeCode(code) {
     client_id: CLIENT_ID,
     code,
     grant_type: 'authorization_code',
-    redirect_uri: REDIRECT
+    redirect_uri: REDIRECT,
+    scope: SCOPE
   });
 }
 
+/*
+ * Renews the Live token.
+ *
+ * `scope` is required here. The authorization_code grant works without it - which
+ * is why signing in succeeds and only the refresh a while later fails - but
+ * login.live.com rejects a refresh_token grant with
+ * {"error":"invalid_scope","error_description":"The provided request must include
+ * a 'scope' input parameter."}. It must match the scope the code was issued for.
+ */
 function refresh(refreshToken) {
   return postForm(TOKEN, {
     client_id: CLIENT_ID,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
-    redirect_uri: REDIRECT
+    redirect_uri: REDIRECT,
+    scope: SCOPE
   });
 }
 
