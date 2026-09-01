@@ -39,6 +39,41 @@ function manifestUrl() {
   return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/update.json`;
 }
 
+/*
+ * Fetching the manifest without getting yesterday's answer.
+ *
+ * raw.githubusercontent.com sits behind a CDN that caches for minutes AND ignores
+ * the query string, so the usual `?t=<now>` trick does nothing - it returns
+ * x-cache: HIT and a stale version, and the launcher decides it is up to date when
+ * an update was published moments ago.
+ *
+ * The API's contents endpoint is not cached that way and answers with the current
+ * file. It is rate limited (60/hour per address, and one check per launch is well
+ * inside that), so raw is kept as the fallback for when that runs out.
+ */
+async function fetchManifest() {
+  const { owner, repo, branch } = repoConfig();
+  const apiUrl =
+    `https://api.github.com/repos/${owner}/${repo}/contents/update.json?ref=${branch}`;
+
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { 'User-Agent': 'AstraClient/1.0', Accept: 'application/vnd.github.raw' },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (res.ok) return JSON.parse(await res.text());
+
+    // 404 means nothing published; say so rather than falling back and reporting
+    // a confusing network error from the second attempt.
+    if (res.status === 404) throw new Error(`GET ${apiUrl} -> 404`);
+  } catch (err) {
+    if (/-> 404/.test(err.message)) throw err;
+    // Rate limited or offline - try raw before giving up.
+  }
+
+  return net.getJson(`${manifestUrl()}?t=${Date.now()}`);
+}
+
 function isConfigured() {
   return Boolean(repoConfig().owner);
 }
@@ -81,7 +116,7 @@ async function check(appDir) {
 
   let manifest;
   try {
-    manifest = await net.getJson(`${manifestUrl()}?t=${Date.now()}`);
+    manifest = await fetchManifest();
   } catch (err) {
     // A 404 is the ordinary "nothing has been published to this repo yet" case and
     // should not be reported as a network failure - that sent the last debug session
