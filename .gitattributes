@@ -1,1 +1,2 @@
-* text=auto eol=lf
+# The updater checks a SHA-1 per file, so bytes must survive the round trip.
+* -text
