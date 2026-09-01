@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('astra', {
   update: {
     check: () => ipcRenderer.invoke('update:check'),
     download: (info) => ipcRenderer.invoke('update:download', info),
+    fullInstall: (info) => ipcRenderer.invoke('update:fullInstall', info),
     restart: () => ipcRenderer.invoke('update:restart'),
     repo: (config) => ipcRenderer.invoke('update:repo', config),
     applied: () => ipcRenderer.invoke('update:applied'),

@@ -2509,6 +2509,22 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.3.1',
+    date: '2026-09-01',
+    title: 'Updates from inside',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Update from inside the launcher - it downloads only the files that changed.',
+      'A normal update is a few megabytes, not the whole 92 MB installer again.',
+      'The installer is only needed the first time, or when Electron itself changes.',
+      'Astra finds its backend from a published address, so friends can work between people.'
+    ]
+  },
+  {
     version: '1.3.0',
     date: '2026-08-31',
     title: 'It fixes itself',
@@ -2702,7 +2718,7 @@ async function checkForUpdates(loud) {
     status.textContent = `${info.version} needs a full reinstall (the Electron runtime changed)`;
     if (info.downloads && info.downloads.setup) {
       $('#btn-install-update').hidden = false;
-      $('#btn-install-update').textContent = 'Download installer';
+      $('#btn-install-update').textContent = 'Update now';
     }
     return;
   }
@@ -2718,14 +2734,27 @@ $('#btn-check-update').addEventListener('click', () => checkForUpdates(true));
 $('#btn-install-update').addEventListener('click', async () => {
   if (!pendingUpdate || !pendingUpdate.available) return;
 
-  // A runtime bump cannot be swapped in place; hand them the installer instead.
+  const button = $('#btn-install-update');
+
+  // A runtime bump cannot be swapped in place, so the real installer has to run -
+  // but it is fetched and started here rather than in a browser. The launcher
+  // closes on purpose: the installer cannot overwrite files it still holds open.
   if (pendingUpdate.needsFullInstall) {
-    const url = pendingUpdate.downloads && pendingUpdate.downloads.setup;
-    if (url) window.astra.shell.open(url);
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>';
+    $('#update-status').textContent = 'Downloading the installer...';
+    try {
+      await window.astra.update.fullInstall(pendingUpdate);
+      $('#update-status').textContent = 'Installer starting - Astra will close and reopen';
+      toast('Installing the update. Astra will restart.', 'ok');
+    } catch (err) {
+      toast(err.message, 'error');
+      button.textContent = 'Update now';
+      button.disabled = false;
+    }
     return;
   }
 
-  const button = $('#btn-install-update');
   button.disabled = true;
   button.innerHTML = '<span class="spinner"></span>';
   try {

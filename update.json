@@ -2,7 +2,7 @@
   "version": "1.3.1",
   "electronMajor": 31,
   "notes": "Astra Client 1.3.1",
-  "released": "2026-09-01T06:07:02.897Z",
+  "released": "2026-09-01T06:20:10.325Z",
   "downloads": {
     "setup": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.1/AstraClientSetup-v1.3.1.exe",
     "zip": "https://github.com/justthatguypal/ASTRAClient-/releases/download/v1.3.1/AstraClient-v1.3.1-win64.zip"
@@ -130,20 +130,20 @@
     },
     {
       "path": "main.js",
-      "sha1": "bb6265e55808ddaa21594ab6932e941ddd6defd4",
-      "size": 14070,
+      "sha1": "c3a750b3221c6bc930d1e25d2142467827f4a279",
+      "size": 15470,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/main.js"
     },
     {
       "path": "package.json",
-      "sha1": "d03848491acde927f63cbff62d39a928d08b2da8",
+      "sha1": "9f26682c6db59b079d196ecf2c351c0eb6214ce5",
       "size": 826,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/package.json"
     },
     {
       "path": "preload.js",
-      "sha1": "d167d7ed3016bf6074ce16d9b65da8a1f8c1b8bd",
-      "size": 6030,
+      "sha1": "eb0d79a639df4054670c13aeca88d93c1aee0e3b",
+      "size": 6106,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/preload.js"
     },
     {
@@ -160,8 +160,8 @@
     },
     {
       "path": "renderer/js/app.js",
-      "sha1": "540c816a80f0c17f33af07730b5e1b7b2a08a38e",
-      "size": 98680,
+      "sha1": "e65af0c49f7a63b414f3238885a9c040bbf7952d",
+      "size": 99941,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/renderer/js/app.js"
     },
     {
@@ -256,8 +256,8 @@
     },
     {
       "path": "src/updater.js",
-      "sha1": "2b24d9d5115e7157c10a1a87f0f2797f8edca106",
-      "size": 9309,
+      "sha1": "387faf17546f7be2339956be0fc14063d6c08c08",
+      "size": 11086,
       "url": "https://raw.githubusercontent.com/justthatguypal/ASTRAClient-/main/app/src/updater.js"
     },
     {

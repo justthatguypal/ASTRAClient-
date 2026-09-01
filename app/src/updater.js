@@ -198,6 +198,49 @@ async function download(info, onProgress = () => {}) {
   return staging;
 }
 
+/*
+ * Fetches the setup exe so a full update never sends anyone to a web page.
+ *
+ * A delta cannot cross an Electron major version - the runtime itself has to be
+ * replaced - so those updates need the real installer. Opening a browser for it
+ * meant leaving the launcher, finding the download, and running it by hand; this
+ * downloads it here, with progress, ready to run.
+ */
+async function downloadInstaller(info, onProgress = () => {}) {
+  const url = info && info.downloads && info.downloads.setup;
+  if (!url) throw new Error('This update has no installer published yet.');
+
+  const dest = path.join(UPDATES_DIR, `AstraClientSetup-v${info.version}.exe`);
+  await fsp.mkdir(UPDATES_DIR, { recursive: true });
+
+  const res = await fetch(url, { headers: { 'User-Agent': 'AstraClient/1.0' } });
+  if (!res.ok) throw new Error(`Could not download the installer (${res.status}).`);
+
+  const total = Number(res.headers.get('content-length') || 0);
+  const temp = `${dest}.part`;
+  const out = fs.createWriteStream(temp);
+  let done = 0;
+
+  for await (const chunk of res.body) {
+    done += chunk.length;
+    if (!out.write(Buffer.from(chunk))) {
+      await new Promise((resolve) => out.once('drain', resolve));
+    }
+    onProgress({ done, total });
+  }
+  await new Promise((resolve, reject) => out.end((err) => (err ? reject(err) : resolve())));
+
+  // A truncated exe still runs and fails confusingly, so a short read is caught here.
+  if (total && done !== total) {
+    await fsp.rm(temp, { force: true }).catch(() => {});
+    throw new Error('The installer download was incomplete. Try again.');
+  }
+
+  await fsp.rm(dest, { force: true }).catch(() => {});
+  await fsp.rename(temp, dest);
+  return dest;
+}
+
 function listStaged() {
   try {
     return fs.readdirSync(UPDATES_DIR, { withFileTypes: true })
@@ -264,6 +307,7 @@ function setRepo(config) {
 }
 
 module.exports = {
+  downloadInstaller,
   check,
   download,
   applyStaged,

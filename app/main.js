@@ -173,6 +173,40 @@ ipcMain.handle('update:download', async (_e, info) => {
   return true;
 });
 
+/*
+ * A full update, without leaving the launcher.
+ *
+ * The installer cannot replace files that are open, so the launcher starts it and
+ * then quits: NSIS waits for the process to go, installs, and relaunches. From the
+ * player's side it is one button and the app reappearing on the new version.
+ */
+ipcMain.handle('update:fullInstall', async (_e, info) => {
+  // The delta path reports progress as a count of files; this one is one big file,
+  // so it is sent as a label instead of pretending 96 million bytes are 96 million
+  // files.
+  const mb = (bytes) => (bytes / 1024 / 1024).toFixed(1);
+  let lastSent = 0;
+
+  const exe = await updater.downloadInstaller(info, ({ done, total }) => {
+    // Throttled: a write callback per chunk would flood the renderer.
+    if (done - lastSent < 1024 * 1024 && done !== total) return;
+    lastSent = done;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update:progress', {
+        label: total ? `installer ${mb(done)} MB of ${mb(total)} MB` : `installer ${mb(done)} MB`
+      });
+    }
+  });
+
+  const started = shell.openPath(exe);
+  const error = await started;
+  if (error) throw new Error(`Could not start the installer: ${error}`);
+
+  // Give the installer a moment to take hold before releasing the files it needs.
+  setTimeout(() => app.exit(0), 1500);
+  return true;
+});
+
 ipcMain.handle('update:restart', () => {
   app.relaunch();
   app.exit(0);
