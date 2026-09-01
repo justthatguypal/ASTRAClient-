@@ -2673,6 +2673,19 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.4.1',
+    date: '2026-09-01',
+    title: 'The trailer closes',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Fixed the trailer refusing to close - the X, Close, Esc and clicking outside all work now.'
+    ]
+  },
+  {
     version: '1.4.0',
     date: '2026-09-01',
     title: 'Featured, and a trailer',

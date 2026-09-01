@@ -1499,6 +1499,14 @@ input[type=range]::-webkit-slider-thumb {
 
 /* ----------------------------------------------------------------- trailer */
 
+/*
+ * A class that sets `display` beats the browser's own `[hidden] { display: none }`,
+ * because a class selector outranks an attribute selector in the UA sheet. Without
+ * this rule the overlay ignores `hidden` completely and no close button can dismiss
+ * it - the element is simply always displayed.
+ */
+.trailer-overlay[hidden] { display: none; }
+
 .trailer-overlay {
   position: fixed; inset: 0; z-index: 400;
   display: flex; align-items: center; justify-content: center;
