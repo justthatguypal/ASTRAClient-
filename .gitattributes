@@ -1,1 +1,4 @@
-* text=auto eol=lf
+# The updater verifies every file by SHA-1, so what GitHub serves must be byte
+# for byte what the manifest hashed. Any end-of-line conversion changes the bytes
+# and every update dies on "checksum mismatch". Store everything verbatim.
+* -text
