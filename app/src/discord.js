@@ -18,8 +18,15 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 
-// Public application id for rich presence. Only used to look up the art assets
-// registered against it; it grants no access to anything.
+/*
+ * Application id for rich presence. Only used to look up the art assets registered
+ * against it; it grants no access to anything.
+ *
+ * The built-in value is a placeholder, and Discord answers a handshake using it with
+ * {"code":4000,"message":"Invalid Client ID"} and hangs up - so presence can never
+ * appear until a real id is set. Make one at https://discord.com/developers
+ * (New Application, then copy the Application ID) and paste it into Settings.
+ */
 const DEFAULT_APP_ID = '1310000000000000000';
 
 const OP_HANDSHAKE = 0;
@@ -32,6 +39,7 @@ let connected = false;
 let currentActivity = null;
 let reconnectTimer = null;
 let appId = DEFAULT_APP_ID;
+let lastError = null;
 
 function pipePath(index) {
   if (process.platform === 'win32') return `\\\\?\\pipe\\discord-ipc-${index}`;
@@ -72,23 +80,77 @@ function tryPipe(index) {
   });
 }
 
+/*
+ * Connects and waits for Discord to answer the handshake.
+ *
+ * The reply used to be ignored, which made every failure look like a success:
+ * Discord rejects a bad client id with op 2 and closes the pipe, and the launcher
+ * carried on believing it was connected. Reading the reply is what lets the setting
+ * say "Invalid application id" instead of the untrue "Discord is not running".
+ */
 async function connect() {
   if (connected || socket) return connected;
+  lastError = null;
+  let reachedDiscord = false;
 
   for (let index = 0; index <= 9; index++) {
     const candidate = await tryPipe(index);
     if (!candidate) continue;
+    reachedDiscord = true;
+
+    const accepted = await new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok, error) => {
+        if (settled) return;
+        settled = true;
+        lastError = error || null;
+        resolve(ok);
+      };
+
+      candidate.on('data', (buf) => {
+        if (buf.length < 8) return;
+        const op = buf.readInt32LE(0);
+        const length = buf.readInt32LE(4);
+        let body = {};
+        try { body = JSON.parse(buf.slice(8, 8 + length).toString('utf8')); } catch (_) { /* ignore */ }
+
+        // op 2 is CLOSE - Discord refusing us, and it says why.
+        if (op === OP_CLOSE) return finish(false, body.message || 'Discord refused the connection');
+        finish(true, null);
+      });
+
+      candidate.once('error', () => finish(false, 'The connection to Discord failed'));
+      candidate.once('close', () => finish(false, 'Discord closed the connection'));
+      candidate.write(encode(OP_HANDSHAKE, { v: 1, client_id: appId }));
+
+      // Discord answers immediately; a silent pipe is not Discord.
+      setTimeout(() => finish(false, 'Discord did not answer'), 3000);
+    });
+
+    if (!accepted) {
+      try { candidate.destroy(); } catch (_) { /* already gone */ }
+      continue;
+    }
 
     socket = candidate;
     socket.on('error', cleanup);
     socket.on('close', cleanup);
-    socket.on('data', () => { /* replies are not needed; presence is fire and forget */ });
-
-    socket.write(encode(OP_HANDSHAKE, { v: 1, client_id: appId }));
     connected = true;
 
     if (currentActivity) setActivity(currentActivity);
     return true;
+  }
+
+  /*
+   * A pipe that opened and then went quiet is still a failure, and with the
+   * placeholder id it is the expected one: Discord answers the first bad handshake
+   * with "Invalid Client ID" and simply stops replying to the ones after it. Saying
+   * "Discord did not answer" would send someone looking at Discord, which is fine.
+   */
+  if (reachedDiscord && appId === DEFAULT_APP_ID) {
+    lastError = 'No Discord application id set - presence cannot work without one';
+  } else if (!lastError) {
+    lastError = 'Discord is not running';
   }
   return false;
 }
@@ -156,9 +218,9 @@ function playing({ version, loader, server }) {
   });
 }
 
-function start(customAppId) {
+async function start(customAppId) {
   if (customAppId) appId = customAppId;
-  connect().catch(() => {});
+  const ok = await connect().catch(() => false);
   // Discord may be started after the launcher, so keep trying quietly.
   if (!reconnectTimer) {
     reconnectTimer = setInterval(() => {
@@ -166,6 +228,7 @@ function start(customAppId) {
     }, 30000);
     if (reconnectTimer.unref) reconnectTimer.unref();
   }
+  return ok;
 }
 
 function stop() {
@@ -183,4 +246,11 @@ function isConnected() {
   return connected;
 }
 
-module.exports = { start, stop, setActivity, idle, playing, isConnected, OP_PING };
+/** Connected, and if not, the actual reason - which is rarely "not running". */
+function status() {
+  return { connected, error: connected ? null : lastError, appId };
+}
+
+module.exports = {
+  start, stop, setActivity, idle, playing, isConnected, status, OP_PING
+};

@@ -34,6 +34,8 @@ const DEFAULTS = {
   processPriority: 'normal',
   writeGameOptions: false,
   discordEnabled: true,
+  trailerSeen: false,
+  discordAppId: null,
   serverList: [],
   updateRepo: null,
   autoInstallClientMod: true

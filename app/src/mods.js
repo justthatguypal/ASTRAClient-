@@ -72,6 +72,70 @@ async function search({ query = '', loader, gameVersion, category, sort = 'relev
 
 const LOADERS = ['fabric', 'forge', 'neoforge', 'quilt', 'liteloader', 'modloader', 'rift'];
 
+/* ---------------------------------------------------------------- featured
+ *
+ * Three community mods, changing once a week.
+ *
+ * The pick is derived from the week number rather than stored anywhere, so every
+ * launcher shows the same three on the same week and they rotate on their own with
+ * nothing to maintain. A seeded shuffle over a pool of well-liked mods keeps it
+ * varied without ever surfacing something nobody has vetted.
+ */
+
+/** ISO-ish week number. Only needs to be stable and to change once a week. */
+function weekNumber(date = new Date()) {
+  const start = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const days = Math.floor((date.getTime() - start) / 86400000);
+  return date.getUTCFullYear() * 53 + Math.floor(days / 7);
+}
+
+/* A small deterministic generator - the same seed always deals the same hand. */
+function seeded(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+let featuredCache = { key: null, hits: [] };
+
+/**
+ * Three mods for this week, drawn from what the profile can actually run.
+ * Filters are part of the cache key so switching profiles re-picks.
+ */
+async function featured({ loader, gameVersion, count = 3 } = {}) {
+  const week = weekNumber();
+  const key = JSON.stringify([week, loader, gameVersion, count]);
+  if (featuredCache.key === key) return featuredCache.hits;
+
+  // A pool of things worth showing: popular enough to be safe, deep enough that the
+  // weekly pick is not the same handful every time.
+  const result = await search({
+    query: '',
+    loader,
+    gameVersion,
+    sort: 'follows',
+    limit: 100,
+    projectType: 'mod'
+  });
+
+  const pool = result.hits.filter((hit) => hit.downloads > 1000);
+  if (!pool.length) return [];
+
+  // Fisher-Yates driven by the week, so the order is fixed for the whole week.
+  const random = seeded(week * 2654435761);
+  const order = pool.slice();
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+
+  const hits = order.slice(0, count);
+  featuredCache = { key, hits };
+  return hits;
+}
+
 /* ------------------------------------------------------------------ horror
  *
  * Modrinth has no "horror" category - its tags are adventure, magic, cursed and
@@ -311,5 +375,5 @@ async function toggle(profile, filename, kind = 'mod') {
   return path.basename(next);
 }
 
-module.exports = { search, projectVersions, install, remove, toggle, listInstalled,
+module.exports = { search, featured, projectVersions, install, remove, toggle, listInstalled,
   modsDirFor, shadersDirFor, resourcePacksDirFor, folderFor };

@@ -155,6 +155,7 @@ function onViewShown(name) {
   if (name === 'mods') {
     refreshModsTarget();
     if (!state.mods.loaded) runModSearch(true);
+    renderFeatured();
     renderInstalled();
   }
   if (name === 'wardrobe') refreshWardrobe();
@@ -410,6 +411,62 @@ $('#account-chip').addEventListener('click', () => {
   else showView('settings');
 });
 
+/*
+ * The trailer.
+ *
+ * Shown once, the first time someone signs in - that is the moment they have just
+ * arrived and have no idea what this is. It never interrupts twice; after that it
+ * lives behind a button in Settings.
+ *
+ * Paused and rewound on close rather than just hidden, or the audio keeps playing
+ * behind the launcher.
+ */
+function showTrailer() {
+  const overlay = $('#trailer-overlay');
+  const video = $('#trailer-video');
+  if (!overlay || !video) return;
+
+  const caption = document.querySelector('.trailer-caption');
+  if (caption) caption.innerHTML = 'This is Astra Client &middot; press Esc to close';
+
+  overlay.hidden = false;
+  video.currentTime = 0;
+  // Autoplay can be refused; the controls are there either way.
+  video.play().catch(() => {});
+}
+
+function hideTrailer() {
+  const overlay = $('#trailer-overlay');
+  const video = $('#trailer-video');
+  if (!overlay || !video) return;
+
+  video.pause();
+  video.currentTime = 0;
+  overlay.hidden = true;
+}
+
+$('#btn-trailer-close').addEventListener('click', hideTrailer);
+$('#btn-trailer-x').addEventListener('click', hideTrailer);
+$('#btn-watch-trailer').addEventListener('click', showTrailer);
+
+// When it finishes, say so rather than leaving a black frame and no hint that
+// the way out is the button below it.
+$('#trailer-video').addEventListener('ended', () => {
+  const caption = document.querySelector('.trailer-caption');
+  if (caption) caption.textContent = 'That is Astra Client - close this to start playing';
+  const close = $('#btn-trailer-close');
+  if (close) close.textContent = 'Close';
+});
+
+$('#trailer-overlay').addEventListener('click', (e) => {
+  // Clicking the dimmed area closes; clicking the video itself must not.
+  if (e.target === $('#trailer-overlay')) hideTrailer();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#trailer-overlay').hidden) hideTrailer();
+});
+
 async function signIn() {
   try {
     toast('Opening the Microsoft sign in window');
@@ -417,6 +474,13 @@ async function signIn() {
     state.settings.account = account;
     renderAccount();
     toast(`Signed in as ${account.name}`, 'ok');
+
+    // First sign in only: they have just arrived and this explains what Astra is.
+    if (!state.settings.trailerSeen) {
+      state.settings.trailerSeen = true;
+      window.astra.settings.set({ trailerSeen: true });
+      setTimeout(showTrailer, 700);
+    }
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -681,7 +745,7 @@ function onProfileChanged() {
   state.mods.offset = 0;
   refreshModsTarget();
   renderInstalled();
-  if (currentView === 'mods') runModSearch(true);
+  if (currentView === 'mods') { runModSearch(true); renderFeatured(); }
 }
 
 $('#btn-open-mods').addEventListener('click', () => {
@@ -893,6 +957,24 @@ window.astra.launch.onEvent((event) => {
 
 // ---------------------------------------------------------------- settings ui
 
+/*
+ * Says what is actually wrong.
+ *
+ * Every failure used to read "Discord is not running", including the one that
+ * actually happens: Discord running fine and rejecting the placeholder
+ * application id the launcher ships with.
+ */
+function discordMessage(status) {
+  if (!status) return 'Discord is not running';
+  if (status.connected) return 'Connected to Discord';
+
+  const error = String(status.error || '');
+  if (/invalid client id|application id/i.test(error)) {
+    return 'Discord is running - set a Discord application id below to show presence';
+  }
+  return error || 'Discord is not running';
+}
+
 function bindSettings() {
   const s = state.settings;
 
@@ -905,6 +987,16 @@ function bindSettings() {
     s.memoryMb = Number(e.target.value);
     window.astra.settings.set({ memoryMb: s.memoryMb });
   });
+
+  const appIdField = $('#set-discord-appid');
+  if (appIdField) {
+    appIdField.value = s.discordAppId || '';
+    appIdField.addEventListener('change', async (e) => {
+      const status = await window.astra.discord.appId(e.target.value);
+      $('#discord-state').textContent = $('#set-discord').checked
+        ? discordMessage(status) : 'Off';
+    });
+  }
 
   $('#set-width').value = s.width;
   $('#set-height').value = s.height;
@@ -1011,9 +1103,9 @@ function bindSettings() {
 
   $('#set-discord').checked = s.discordEnabled !== false;
   $('#set-discord').addEventListener('change', async (e) => {
-    const connected = await window.astra.discord.set(e.target.checked);
+    const status = await window.astra.discord.set(e.target.checked);
     $('#discord-state').textContent = e.target.checked
-      ? (connected ? 'Connected to Discord' : 'Discord is not running')
+      ? discordMessage(status)
       : 'Off';
   });
 
@@ -1386,6 +1478,78 @@ function compactNumber(value) {
 }
 
 let searchToken = 0;
+
+/*
+ * The three community mods of the week.
+ *
+ * Only for mods - shaders and resource packs have their own tabs and their own
+ * character, and a "featured mod" sitting above a shader list makes no sense.
+ * Failure is silent: this is a nice-to-have above the real browser, and an empty
+ * strip is much better than an error where the mod list should be.
+ */
+async function renderFeatured() {
+  const strip = $('#featured-strip');
+  const row = $('#featured-row');
+  if (!strip || !row) return;
+
+  if (isShaders() || isPacks()) { strip.hidden = true; return; }
+
+  const profile = currentProfile();
+  try {
+    const picks = await window.astra.mods.featured({
+      loader: profile && isLoaderBound() ? profile.loader : undefined,
+      gameVersion: profile ? profile.mcVersion : undefined
+    });
+
+    if (!picks.length) { strip.hidden = true; return; }
+
+    row.innerHTML = '';
+    for (const mod of picks) {
+      const card = document.createElement('div');
+      card.className = 'featured-card pop-item';
+
+      if (mod.icon) {
+        const img = document.createElement('img');
+        img.src = mod.icon;
+        img.alt = '';
+        card.appendChild(img);
+      }
+
+      const text = document.createElement('div');
+      text.className = 'featured-text';
+
+      const title = document.createElement('p');
+      title.className = 'featured-title';
+      title.textContent = mod.title;
+
+      const author = document.createElement('p');
+      author.className = 'featured-author';
+      author.textContent = 'by ' + mod.author;
+
+      const desc = document.createElement('p');
+      desc.className = 'featured-desc';
+      desc.textContent = mod.description;
+
+      text.append(title, author, desc);
+      card.appendChild(text);
+
+      // Clicking one searches for it, so it lands in the normal grid with the
+      // normal install button rather than needing a second install path.
+      card.addEventListener('click', () => {
+        $('#mod-search').value = mod.title;
+        state.mods.query = mod.title;
+        runModSearch(true);
+      });
+
+      row.appendChild(card);
+    }
+
+    strip.hidden = false;
+    popIn(row);
+  } catch (_) {
+    strip.hidden = true;
+  }
+}
 
 async function runModSearch(reset) {
   const profile = currentProfile();
@@ -2509,6 +2673,22 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.4.0',
+    date: '2026-09-01',
+    title: 'Featured, and a trailer',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Featured this week: three community mods at the top of the Mods tab, new every week.',
+      'A trailer plays the first time you sign in, and lives in Settings after that.',
+      'Discord presence now says what is actually wrong instead of always "not running".',
+      'Set your own Discord application id in Settings to turn presence on.'
+    ]
+  },
+  {
     version: '1.3.1',
     date: '2026-09-01',
     title: 'Updates from inside',
@@ -2845,7 +3025,7 @@ $('#btn-invite').addEventListener('click', () => {
       const discordState = $('#discord-state');
       if (discordState) {
         discordState.textContent = state.settings.discordEnabled === false ? 'Off'
-          : connected ? 'Connected to Discord' : 'Discord is not running';
+          : discordMessage(connected);
       }
     }]
   ]);

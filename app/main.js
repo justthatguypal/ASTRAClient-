@@ -56,7 +56,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
   if (store.get('discordEnabled')) {
-    discord.start();
+    discord.start(store.get('discordAppId') || undefined);
     setTimeout(() => discord.idle(), 1500);
   }
 
@@ -319,6 +319,7 @@ ipcMain.handle('doctor:fix', async (_e, profileId, fix) => {
 });
 
 ipcMain.handle('mods:search', (_e, options) => mods.search(options));
+ipcMain.handle('mods:featured', (_e, options) => mods.featured(options));
 
 ipcMain.handle('mods:install', async (_e, profileId, projectId) => {
   const profile = profileById(profileId);
@@ -410,12 +411,31 @@ ipcMain.handle('cosmetics:list', () => cosmetics.list());
 
 // ---------------------------------------------------------------- discord
 
-ipcMain.handle('discord:set', (_e, enabled) => {
+ipcMain.handle('discord:set', async (_e, enabled) => {
   store.set('discordEnabled', Boolean(enabled));
-  if (enabled) { discord.start(); discord.idle(); } else { discord.stop(); }
-  return discord.isConnected();
+  if (!enabled) {
+    discord.stop();
+    return discord.status();
+  }
+
+  // Awaited: start() used to be fire-and-forget, so this returned "not connected"
+  // every time simply because the handshake had not finished yet.
+  await discord.start(store.get('discordAppId') || undefined);
+  discord.idle();
+  return discord.status();
 });
-ipcMain.handle('discord:state', () => discord.isConnected());
+
+ipcMain.handle('discord:state', () => discord.status());
+
+ipcMain.handle('discord:appId', async (_e, id) => {
+  store.set('discordAppId', String(id || '').trim() || null);
+  discord.stop();
+  if (store.get('discordEnabled')) {
+    await discord.start(store.get('discordAppId') || undefined);
+    discord.idle();
+  }
+  return discord.status();
+});
 
 // ---------------------------------------------------------------- performance
 

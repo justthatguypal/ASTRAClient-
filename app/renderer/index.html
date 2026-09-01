@@ -201,6 +201,14 @@
         <button class="type-btn" data-type="resourcepack">Resource Packs</button>
       </div>
 
+      <div class="featured-strip" id="featured-strip" hidden>
+        <div class="featured-head">
+          <h3>Featured this week</h3>
+          <span class="hint-inline">Three community mods, new every week</span>
+        </div>
+        <div class="featured-row" id="featured-row"></div>
+      </div>
+
       <div class="mods-bar">
         <div class="tabs" id="mod-categories"></div>
         <div class="mods-bar-right">
@@ -346,6 +354,17 @@
       <div class="notes-list" id="notes-list"></div>
     </section>
 
+    <div class="trailer-overlay" id="trailer-overlay" hidden>
+      <div class="trailer-box">
+        <button class="trailer-x" id="btn-trailer-x" title="Close (Esc)" aria-label="Close">&#10005;</button>
+        <video id="trailer-video" src="../assets/trailer.mp4" controls playsinline></video>
+        <div class="trailer-actions">
+          <span class="trailer-caption">This is Astra Client &middot; press Esc to close</span>
+          <button class="ghost-btn small" id="btn-trailer-close">Close</button>
+        </div>
+      </div>
+    </div>
+
     <!-- SETTINGS -->
     <section class="view" data-view="settings">
       <div class="view-head"><h2>Settings</h2></div>
@@ -455,8 +474,16 @@
           <div class="setting-control"><label class="switch"><input type="checkbox" id="set-write-options" /><span></span></label></div>
         </div>
         <div class="setting">
+          <div><strong>What is Astra Client</strong><span class="hint">Watch the trailer again</span></div>
+          <div class="setting-control"><button class="ghost-btn small" id="btn-watch-trailer">Watch</button></div>
+        </div>
+        <div class="setting">
           <div><strong>Discord presence</strong><span class="hint" id="discord-state">Shows what you are playing</span></div>
           <div class="setting-control"><label class="switch"><input type="checkbox" id="set-discord" /><span></span></label></div>
+        </div>
+        <div class="setting">
+          <div><strong>Discord application id</strong><span class="hint">Make one at discord.com/developers, then paste the Application ID here. Presence cannot work without it.</span></div>
+          <div class="setting-control"><input type="text" id="set-discord-appid" class="text-input" placeholder="1234567890123456789" spellcheck="false" /></div>
         </div>
       </div>
 

@@ -58,6 +58,7 @@ contextBridge.exposeInMainWorld('astra', {
 
   mods: {
     search: (options) => ipcRenderer.invoke('mods:search', options),
+    featured: (options) => ipcRenderer.invoke('mods:featured', options),
     install: (profileId, projectId) => ipcRenderer.invoke('mods:install', profileId, projectId),
     installed: (profileId) => ipcRenderer.invoke('mods:installed', profileId),
     remove: (profileId, filename, kind) => ipcRenderer.invoke('mods:remove', profileId, filename, kind),
@@ -119,7 +120,8 @@ contextBridge.exposeInMainWorld('astra', {
   },
   discord: {
     set: (enabled) => ipcRenderer.invoke('discord:set', enabled),
-    state: () => ipcRenderer.invoke('discord:state')
+    state: () => ipcRenderer.invoke('discord:state'),
+    appId: (id) => ipcRenderer.invoke('discord:appId', id)
   },
   clientmod: {
     status: () => ipcRenderer.invoke('clientmod:status'),

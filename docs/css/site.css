@@ -208,3 +208,18 @@ a { color: inherit; }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   html { scroll-behavior: auto; }
 }
+
+
+/* ----------------------------------------------------------------- trailer */
+
+.trailer-section { text-align: center; }
+
+.trailer-frame {
+  max-width: 900px; margin: 28px auto 0;
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.5);
+  background: #000;
+}
+
+.trailer-frame video { width: 100%; display: block; }
