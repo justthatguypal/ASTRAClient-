@@ -700,6 +700,9 @@ function renderProfiles() {
     meta.textContent = profile.loader === 'vanilla'
       ? `Minecraft ${profile.mcVersion}`
       : `${loaderLabel(profile.loader)} ${profile.loaderVersion} - ${profile.mcVersion}`;
+    // Worth marking: a pack profile is somebody else's curated setup, not one you
+    // assembled, so it is useful to see that at a glance in the list.
+    if (profile.fromModpack) meta.textContent += '  -  modpack';
     info.append(name, meta);
 
     const actions = document.createElement('div');
@@ -1393,14 +1396,32 @@ function isPacks() {
   return state.mods.type === 'resourcepack';
 }
 
+function isModpacks() {
+  return state.mods.type === 'modpack';
+}
+
 /** Mods are the only kind that cares which loader a profile uses. */
 function isLoaderBound() {
   return state.mods.type === 'mod';
 }
 
+/* Modpack categories are Modrinth's own pack tags, not the mod ones. */
+const MODPACK_CATEGORIES = [
+  { id: '', label: 'All' },
+  { id: 'adventure', label: 'Adventure' },
+  { id: 'challenging', label: 'Challenging' },
+  { id: 'combat', label: 'Combat' },
+  { id: 'kitchen-sink', label: 'Kitchen sink' },
+  { id: 'lightweight', label: 'Lightweight' },
+  { id: 'magic', label: 'Magic' },
+  { id: 'optimization', label: 'Performance' },
+  { id: 'technology', label: 'Tech' }
+];
+
 function categoriesForType() {
   if (isShaders()) return SHADER_CATEGORIES;
   if (isPacks()) return PACK_CATEGORIES;
+  if (isModpacks()) return MODPACK_CATEGORIES;
   return MOD_CATEGORIES;
 }
 
@@ -1408,12 +1429,14 @@ function categoriesForType() {
 function contentApi() {
   if (isShaders()) return window.astra.shaders;
   if (isPacks()) return window.astra.packs;
+  if (isModpacks()) return window.astra.modpacks;
   return window.astra.mods;
 }
 
 function contentNoun(plural) {
   if (isShaders()) return plural ? 'shaders' : 'shader';
   if (isPacks()) return plural ? 'resource packs' : 'resource pack';
+  if (isModpacks()) return plural ? 'modpacks' : 'modpack';
   return plural ? 'mods' : 'mod';
 }
 
@@ -1572,7 +1595,7 @@ async function renderFeatured() {
         try {
           // A pack becomes its own profile - it pins exact mod versions, and
           // merging that into an existing mods folder is how you get duplicates.
-          const created = await window.astra.mods.installPack(mod.id);
+          const created = await window.astra.modpacks.install(mod.id);
           toast(`Installed ${created.name}`, 'ok');
           await refreshProfiles();
           install.textContent = 'Installed';
@@ -1710,10 +1733,34 @@ function renderMods() {
 }
 
 async function installMod(mod, button) {
+  const original = button.textContent;
+
+  /*
+   * A modpack is not installed *into* a profile - it becomes one. It carries its
+   * own Minecraft version, loader and pinned mod list, so it gets a fresh profile
+   * and shows up in the list beside the ones made by hand.
+   */
+  if (isModpacks()) {
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner"></span>';
+    try {
+      const created = await window.astra.modpacks.install(mod.id);
+      button.classList.add('done');
+      button.textContent = 'Installed';
+      toast(`Installed ${created.name} as a new profile`, 'ok');
+      await refreshProfiles(created.id);
+    } catch (err) {
+      toast(err.message, 'error');
+      button.textContent = original;
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
   const profile = currentProfile();
   if (!profile) return toast('Select a profile first', 'error');
 
-  const original = button.textContent;
   button.disabled = true;
   button.innerHTML = '<span class="spinner"></span>';
 
@@ -2716,6 +2763,23 @@ $('#btn-add-server').addEventListener('click', async () => {
 // What changed in Astra itself. Newest first.
 const ASTRA_NOTES = [
   {
+    version: '1.6.0',
+    date: '2026-09-01',
+    title: 'Updates itself, and a Modpacks tab',
+    links: [
+      { label: 'Astra website', url: 'https://justthatguypal.github.io/ASTRAClient-/' },
+      { label: 'Downloads and releases',
+        url: 'https://github.com/justthatguypal/ASTRAClient-/releases' }
+    ],
+    items: [
+      'Astra now updates itself at startup - a banner at the top tells you when it is ready.',
+      'New Modpacks tab beside Mods, Shaders and Resource Packs.',
+      'Installing a modpack creates its own profile, listed beside the ones you made.',
+      'Fixed downloads hanging forever - a stalled connection is now cut and retried.',
+      'Big files show their own progress, so an update no longer looks frozen.'
+    ]
+  },
+  {
     version: '1.5.0',
     date: '2026-09-01',
     title: 'Modpacks and more frames',
@@ -2960,6 +3024,72 @@ async function refreshUpdatePanel() {
   if (applied) toast(`Updated to ${applied}`, 'ok');
 }
 
+/*
+ * Bringing an out-of-date launcher up to date on its own.
+ *
+ * Anyone who never presses the button sits on an old build forever, so at startup
+ * the update is fetched without being asked. It is only *downloaded* here, never
+ * forced: the swap happens on the next launch (main.js applies staged updates
+ * before the window opens), and the banner offers to restart now for anyone who
+ * would rather not wait.
+ *
+ * A full reinstall is never automatic. That runs an installer and closes the
+ * launcher, which is not something to do to somebody mid-session without asking.
+ */
+function showUpdateBanner(text, { restart = false } = {}) {
+  const banner = $('#update-banner');
+  if (!banner) return;
+  $('#update-banner-text').textContent = text;
+  $('#btn-banner-restart').hidden = !restart;
+  banner.hidden = false;
+}
+
+function hideUpdateBanner() {
+  const banner = $('#update-banner');
+  if (banner) banner.hidden = true;
+}
+
+async function autoUpdate(info) {
+  if (!info || !info.available) return;
+
+  if (info.needsFullInstall) {
+    showUpdateBanner(`Astra ${info.version} is available and needs a full reinstall.`);
+    const restart = $('#btn-banner-restart');
+    restart.hidden = false;
+    restart.textContent = 'Update now';
+    return;
+  }
+
+  showUpdateBanner(`Downloading Astra ${info.version}...`);
+  try {
+    await window.astra.update.download(info);
+    showUpdateBanner(
+      `Astra ${info.version} is ready. It installs next time you open the launcher.`,
+      { restart: true });
+    $('#update-status').textContent = `${info.version} is ready - restart to finish`;
+    $('#btn-install-update').hidden = true;
+    $('#btn-restart').hidden = false;
+  } catch (err) {
+    // Never fatal - an update that cannot download must not stop anyone playing.
+    hideUpdateBanner();
+    $('#update-status').textContent = `Update ${info.version} failed: ${err.message}`;
+  }
+}
+
+$('#btn-banner-later').addEventListener('click', hideUpdateBanner);
+
+$('#btn-banner-restart').addEventListener('click', async () => {
+  if (pendingUpdate && pendingUpdate.needsFullInstall) {
+    try {
+      await window.astra.update.fullInstall(pendingUpdate);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    return;
+  }
+  await window.astra.update.restart();
+});
+
 async function checkForUpdates(loud) {
   const status = $('#update-status');
   status.textContent = 'Checking...';
@@ -3050,10 +3180,19 @@ $('#btn-save-repo').addEventListener('click', async () => {
   checkForUpdates(false);
 });
 
-window.astra.update.onProgress(({ done, total, label }) => {
-  $('#update-status').textContent = total
-    ? `Downloading ${done}/${total} - ${label}`
-    : `Downloading ${label}`;
+window.astra.update.onProgress(({ done, total, label, bytes }) => {
+  // A big file is one item in the count, so show its own progress or the bar
+  // appears stuck on the same number for the length of the download.
+  const mb = (n) => (n / 1024 / 1024).toFixed(1);
+  const detail = bytes && bytes.expected
+    ? `${label} ${mb(bytes.got)}/${mb(bytes.expected)} MB`
+    : label;
+
+  const text = total ? `Downloading ${done}/${total} - ${detail}` : `Downloading ${detail}`;
+  $('#update-status').textContent = text;
+
+  const banner = $('#update-banner');
+  if (banner && !banner.hidden) $('#update-banner-text').textContent = text;
 });
 
 $('#btn-invite').addEventListener('click', () => {
@@ -3103,6 +3242,9 @@ $('#btn-invite').addEventListener('click', () => {
     ['Looking for updates', async () => {
       // Quiet on purpose: nobody wants a popup every launch saying nothing changed.
       await checkForUpdates(false);
+      // Deliberately not awaited: an out-of-date launcher should still open
+      // straight away and update in the background behind the banner.
+      if (state.settings.autoUpdate !== false) autoUpdate(pendingUpdate);
     }],
     ['Connecting to Astra', async () => {
       // Silent: the launcher works fine with the backend off, so a failure here is

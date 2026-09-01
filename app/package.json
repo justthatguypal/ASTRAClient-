@@ -1,7 +1,7 @@
 {
   "name": "astra-client",
   "productName": "Astra Client",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Moon-themed Minecraft launcher - Microsoft sign in, every version, every mod loader, a built-in mod browser and in-app updates",
   "main": "main.js",
   "author": "Astra Client",

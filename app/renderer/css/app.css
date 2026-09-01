@@ -1553,3 +1553,43 @@ input[type=range]::-webkit-slider-thumb {
 
 
 .featured-install { margin-top: 10px; width: 100%; }
+
+
+/* ---------------------------------------------------------- update banner
+ *
+ * Pinned to the top because that is where someone looks when the launcher says
+ * something changed, and because it must not push the layout around when it
+ * appears mid-session.
+ */
+
+.update-banner[hidden] { display: none; }
+
+.update-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 350;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; font-size: 13px;
+  color: #eef1fb;
+  background: linear-gradient(90deg, rgba(90, 70, 160, 0.96), rgba(40, 46, 80, 0.96));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  animation: banner-drop 0.28s ease;
+}
+
+@keyframes banner-drop {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.update-banner-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto;
+  background: #7ee0a2;
+  box-shadow: 0 0 0 0 rgba(126, 224, 162, 0.6);
+  animation: banner-pulse 2s infinite;
+}
+
+@keyframes banner-pulse {
+  70% { box-shadow: 0 0 0 7px rgba(126, 224, 162, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(126, 224, 162, 0); }
+}
+
+.update-banner-actions { margin-left: auto; display: flex; gap: 8px; }

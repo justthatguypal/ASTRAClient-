@@ -197,6 +197,7 @@
 
       <div class="type-switch" id="content-type">
         <button class="type-btn active" data-type="mod">Mods</button>
+        <button class="type-btn" data-type="modpack">Modpacks</button>
         <button class="type-btn" data-type="shader">Shaders</button>
         <button class="type-btn" data-type="resourcepack">Resource Packs</button>
       </div>
@@ -353,6 +354,15 @@
       </div>
       <div class="notes-list" id="notes-list"></div>
     </section>
+
+    <div class="update-banner" id="update-banner" hidden>
+      <span class="update-banner-dot"></span>
+      <span id="update-banner-text">An update is downloading...</span>
+      <span class="update-banner-actions">
+        <button class="primary-btn small" id="btn-banner-restart" hidden>Restart now</button>
+        <button class="ghost-btn small" id="btn-banner-later">Later</button>
+      </span>
+    </div>
 
     <div class="trailer-overlay" id="trailer-overlay" hidden>
       <div class="trailer-box">

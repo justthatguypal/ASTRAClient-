@@ -129,6 +129,11 @@ contextBridge.exposeInMainWorld('astra', {
     status: () => ipcRenderer.invoke('clientmod:status'),
     check: (profileId) => ipcRenderer.invoke('clientmod:check', profileId)
   },
+  modpacks: {
+    search: (options) => ipcRenderer.invoke('modpacks:search', options),
+    install: (projectId) => ipcRenderer.invoke('modpacks:install', projectId)
+  },
+
   perf: {
     presets: () => ipcRenderer.invoke('perf:presets'),
     ping: (address) => ipcRenderer.invoke('perf:ping', address),

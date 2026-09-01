@@ -322,6 +322,7 @@ ipcMain.handle('doctor:fix', async (_e, profileId, fix) => {
 ipcMain.handle('mods:search', (_e, options) => mods.search(options));
 ipcMain.handle('mods:featured', (_e, options) => mods.featured(options));
 
+ipcMain.handle('modpacks:search', (_e, options) => modpacks.search(options));
 ipcMain.handle('modpacks:featured', (_e, options) => modpacks.featured(options));
 
 ipcMain.handle('modpacks:install', async (_e, projectId) => {

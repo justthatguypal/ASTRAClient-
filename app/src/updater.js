@@ -186,7 +186,11 @@ async function download(info, onProgress = () => {}) {
     label: file.path
   }));
 
-  await net.downloadAll(items, (done, total, label) => onProgress({ done, total, label }), 6);
+  // `bytes` arrives only for files large enough to stall a file-count bar on their
+  // own - the trailer alone is most of an update, and without this the progress sits
+  // on one number long enough to look frozen.
+  await net.downloadAll(items,
+    (done, total, label, bytes) => onProgress({ done, total, label, bytes }), 6);
 
   // Written last on purpose: its presence is what makes the staged copy applicable.
   await fsp.writeFile(path.join(staging, MARKER), JSON.stringify({

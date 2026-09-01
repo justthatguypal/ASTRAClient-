@@ -7,7 +7,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const { pipeline } = require('stream/promises');
-const { Readable } = require('stream');
+const { Readable, Transform } = require('stream');
 
 async function getJson(url) {
   const res = await fetch(url, { headers: { 'User-Agent': 'AstraClient/1.0' } });
@@ -44,16 +44,63 @@ async function isValid(file, sha1, size) {
   }
 }
 
-async function download(url, dest, sha1, size, attempt = 0) {
+/** No data for this long means the connection is dead, not slow. */
+const STALL_MS = 30000;
+
+/** Passes bytes through untouched, failing the stream if they stop arriving. */
+function stallGuard(ms, message, onChunk) {
+  let timer = null;
+  const arm = (stream) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => stream.destroy(new Error(message)), ms);
+  };
+
+  return new Transform({
+    transform(chunk, _enc, next) {
+      arm(this);
+      if (onChunk) onChunk(chunk);
+      next(null, chunk);
+    },
+    flush(next) {
+      clearTimeout(timer);
+      next();
+    }
+  });
+}
+
+async function download(url, dest, sha1, size, attempt = 0, onBytes = null) {
   if (await isValid(dest, sha1, size)) return false;
 
   await fsp.mkdir(path.dirname(dest), { recursive: true });
   const temp = `${dest}.part`;
 
   try {
-    const res = await fetch(url, { headers: { 'User-Agent': 'AstraClient/1.0' } });
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'AstraClient/1.0' },
+      signal: AbortSignal.timeout(45000)
+    });
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    await pipeline(Readable.fromWeb(res.body), fs.createWriteStream(temp));
+
+    /*
+     * Abort a download that stops sending, rather than one that is merely slow.
+     *
+     * There was no timeout here at all, so a connection that stalled mid-transfer
+     * hung forever and the whole update sat there looking frozen. A cap on total
+     * time would be wrong - it would punish slow connections on a big file - so the
+     * clock is on the *gap between chunks* and resets every time data arrives.
+     */
+    const expected = Number(res.headers.get('content-length')) || size || 0;
+    let received = 0;
+
+    await pipeline(
+      Readable.fromWeb(res.body),
+      stallGuard(STALL_MS, `${path.basename(dest)} stopped responding`, (chunk) => {
+        if (!onBytes) return;
+        received += chunk.length;
+        onBytes(received, expected);
+      }),
+      fs.createWriteStream(temp)
+    );
 
     if (sha1) {
       const actual = await sha1OfFile(temp);
@@ -68,7 +115,7 @@ async function download(url, dest, sha1, size, attempt = 0) {
     // a clear error message.
     if (attempt < 3) {
       await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
-      return download(url, dest, sha1, size, attempt + 1);
+      return download(url, dest, sha1, size, attempt + 1, onBytes);
     }
     throw new Error(`Failed to download ${url}: ${err.message}`);
   }
@@ -87,8 +134,14 @@ async function downloadAll(items, onProgress, concurrency = 12) {
   async function worker() {
     while (cursor < items.length && !failed) {
       const item = items[cursor++];
+      const label = item.label || path.basename(item.dest);
       try {
-        await download(item.url, item.dest, item.sha1, item.size);
+        await download(item.url, item.dest, item.sha1, item.size, 0, (got, expected) => {
+          // Only worth reporting for files big enough to sit on for a while.
+          if (onProgress && expected > 1024 * 1024) {
+            onProgress(done, total, label, { got, expected });
+          }
+        });
       } catch (err) {
         failed = err;
         return;
