@@ -15,7 +15,8 @@
     "publish": "node tools/github.js publish",
     "github": "node tools/github.js",
     "autostart": "node tools/autostart.js",
-    "capes": "python tools/gen_capes.py"
+    "capes": "python tools/gen_capes.py",
+    "tunnel": "node tools/tunnel.js"
   },
   "devDependencies": {
     "electron": "^31.0.0",

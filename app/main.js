@@ -71,6 +71,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+
+  // Find out where the backend is today. Deliberately not awaited: the window
+  // should not wait on the network, and everything that talks to the backend
+  // already copes with it being unavailable.
+  api.discover().catch(() => {});
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
